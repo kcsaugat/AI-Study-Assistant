@@ -42,7 +42,7 @@ class Particle {
 
 export function ParticleCursor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const theme = useThemeStore((s) => s.theme);
+  const isDark = useThemeStore((s) => s.isDark);
   
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -100,7 +100,7 @@ export function ParticleCursor() {
       window.removeEventListener('mousemove', handleMouseMove);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [theme]);
+  }, [isDark]);
 
   return (
     <canvas
