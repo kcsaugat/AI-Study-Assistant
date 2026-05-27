@@ -7,6 +7,7 @@ import { TopBar } from './TopBar';
 import { PomodoroTimer } from '../PomodoroTimer';
 import { MusicPlayer } from '../MusicPlayer';
 import { ParticleBackground } from '../ParticleBackground';
+import { ParticleCursor } from '../ParticleCursor';
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -28,6 +29,7 @@ export function AppLayout() {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 relative">
       <ParticleBackground />
+      <ParticleCursor />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">

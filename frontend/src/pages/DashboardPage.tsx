@@ -81,35 +81,35 @@ export function DashboardPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="relative overflow-hidden rounded-[2rem] border border-gray-200 dark:border-white/10 bg-slate-950/90 p-6 sm:p-8 mb-8 shadow-2xl shadow-emerald-500/10"
+        className="relative overflow-hidden rounded-[2rem] border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-slate-950/90 backdrop-blur-3xl p-6 sm:p-8 mb-8 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50"
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.18),_transparent_20%),radial-gradient(circle_at_bottom_left,_rgba(139,92,246,0.16),_transparent_18%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(241,245,249,0.1),_transparent_20%),radial-gradient(circle_at_bottom_left,_rgba(226,232,240,0.1),_transparent_18%)]" />
         <motion.div
-          className="pointer-events-none absolute -left-10 top-24 h-28 w-28 rounded-full bg-emerald-400/20 blur-3xl"
+          className="pointer-events-none absolute -left-10 top-24 h-28 w-28 rounded-full bg-slate-300/30 dark:bg-slate-700/20 blur-3xl"
           animate={{ scale: [1, 1.18, 1], x: [0, -12, 0], y: [0, 8, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="pointer-events-none absolute right-6 bottom-10 h-20 w-20 rounded-full bg-purple-500/25 blur-3xl"
+          className="pointer-events-none absolute right-6 bottom-10 h-20 w-20 rounded-full bg-brand-200/30 dark:bg-brand-800/20 blur-3xl"
           animate={{ scale: [1, 1.12, 1], x: [0, 10, 0], y: [0, -10, 0] }}
           transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
         />
         <div className="relative grid gap-6 lg:grid-cols-[1fr_280px] items-center">
           <div>
-            <p className="text-sm uppercase tracking-[0.32em] text-emerald-300/80">AI Study Command Center</p>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-white">Study smarter with instant notes, summaries, and AI tutoring.</h2>
+            <p className="text-sm uppercase tracking-[0.32em] text-slate-500 dark:text-slate-400">AI Study Command Center</p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">Study smarter with instant notes, summaries, and AI tutoring.</h2>
             <p className="mt-4 text-sm text-slate-300 max-w-2xl leading-7">
               Easily manage your study material, generate quizzes and flashcards, and keep everything mobile-friendly on laptop or phone.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-3xl border border-gray-200 dark:border-white/10 bg-white/5 p-4 text-center shadow-lg shadow-slate-950/10 neon-card floating-glow">
-              <div className="text-xs uppercase tracking-[0.28em] text-slate-300">Notes</div>
-              <div className="mt-3 text-3xl font-semibold text-white">{data?.noteCount ?? 0}</div>
+            <div className="rounded-3xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-4 text-center shadow-sm dark:shadow-lg backdrop-blur-md">
+              <div className="text-xs uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Notes</div>
+              <div className="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">{data?.noteCount ?? 0}</div>
             </div>
-            <div className="rounded-3xl border border-gray-200 dark:border-white/10 bg-white/5 p-4 text-center shadow-lg shadow-slate-950/10 neon-card floating-glow">
-              <div className="text-xs uppercase tracking-[0.28em] text-slate-300">Chat Sessions</div>
-              <div className="mt-3 text-3xl font-semibold text-white">{data?.chatCount ?? 0}</div>
+            <div className="rounded-3xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-4 text-center shadow-sm dark:shadow-lg backdrop-blur-md">
+              <div className="text-xs uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Chat Sessions</div>
+              <div className="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">{data?.chatCount ?? 0}</div>
             </div>
           </div>
         </div>
@@ -140,7 +140,7 @@ export function DashboardPage() {
                     initial={{ scale: 0, opacity: 0.6 }}
                     animate={{ scale: 4, opacity: 0 }}
                     transition={{ duration: 0.6, ease: "easeOut" }}
-                    className="absolute rounded-full bg-brand-500/20 dark:bg-white/10 pointer-events-none z-0"
+                    className="absolute rounded-full bg-brand-500/10 dark:bg-white/5 pointer-events-none z-0"
                     style={{
                       left: ripple.x,
                       top: ripple.y,
@@ -151,8 +151,8 @@ export function DashboardPage() {
                   />
                 ))}
                 {/* Glass reflection */}
-                <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent opacity-0 group-hover:opacity-50 transition-opacity duration-500 pointer-events-none rounded-2xl z-0" />
-                <div className="absolute inset-0 bg-gradient-to-br from-[#8b5cf6]/5 to-[#10b981]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0" />
+                <div className="absolute inset-0 bg-gradient-to-b from-white/40 dark:from-white/5 to-transparent opacity-0 group-hover:opacity-50 transition-opacity duration-500 pointer-events-none rounded-2xl z-0" />
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-100/30 to-transparent dark:from-brand-500/5 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0" />
                 
                 <div className={`relative z-10 w-10 h-10 rounded-xl ${s.color} flex items-center justify-center mx-auto mb-3 pointer-events-none`}>
                   <s.icon className="w-5 h-5" />
@@ -169,24 +169,24 @@ export function DashboardPage() {
       <div className="grid md:grid-cols-2 gap-6 mb-8 relative z-10">
         <Draggable>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="cursor-move relative">
-            <Card className="shadow-2xl shadow-[#8b5cf6]/10 dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 relative overflow-hidden h-full group">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#8b5cf6]/10 to-[#10b981]/10 opacity-30" />
+            <Card className="shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 relative overflow-hidden h-full group">
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-100/50 to-transparent dark:from-brand-900/10 dark:to-slate-800/10 opacity-30" />
               
               <Link to="/notes" className="absolute inset-0 z-20 cursor-pointer"></Link>
-              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 dark:group-hover:bg-white/5 transition-colors z-10 pointer-events-none" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 dark:bg-white/0 dark:group-hover:bg-white/5 transition-colors z-10 pointer-events-none" />
 
               <div className="relative flex items-center justify-between pointer-events-none z-10">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-orange-500/20 flex items-center justify-center shadow-[0_0_15px_rgba(249,115,22,0.4)]">
-                    <Flame className="w-6 h-6 text-orange-500" />
+                  <div className="w-12 h-12 rounded-2xl bg-brand-100 dark:bg-brand-900/20 flex items-center justify-center shadow-sm dark:shadow-[0_0_15px_rgba(100,116,139,0.2)]">
+                    <Flame className="w-6 h-6 text-brand-600 dark:text-brand-400" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900 dark:text-white text-lg group-hover:text-orange-500 transition-colors">Study Streak</h3>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-lg group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">Study Streak</h3>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">You're on a roll! Keep it up.</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-[#8b5cf6] drop-shadow-md">
+                  <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-slate-800 dark:from-brand-300 dark:to-white drop-shadow-sm">
                     {data?.studyStreak ?? 0} Days
                   </div>
                   <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-widest mt-1">Current Streak</p>
@@ -198,14 +198,14 @@ export function DashboardPage() {
                   <span>Goal: 7 Days</span>
                   <span>{Math.min(100, Math.round(((data?.studyStreak ?? 0) / 7) * 100))}% Completed</span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-3 overflow-hidden shadow-inner">
+                <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-3 overflow-hidden shadow-inner">
                   <motion.div 
-                    className="bg-gradient-to-r from-orange-500 via-[#8b5cf6] to-[#10b981] h-full rounded-full relative"
+                    className="bg-gradient-to-r from-brand-400 to-brand-600 h-full rounded-full relative"
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(100, ((data?.studyStreak ?? 0) / 7) * 100)}%` }}
                     transition={{ duration: 1.5, ease: "easeOut" }}
                   >
-                    <div className="absolute top-0 right-0 bottom-0 left-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_250%] animate-shimmer" />
+                    <div className="absolute top-0 right-0 bottom-0 left-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%)] bg-[length:250%_250%] animate-shimmer" />
                   </motion.div>
                 </div>
               </div>
@@ -216,15 +216,15 @@ export function DashboardPage() {
         {/* Study Goals Widget */}
         <Draggable>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }} className="cursor-move relative">
-            <Card className="shadow-2xl shadow-[#10b981]/10 dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 relative overflow-hidden h-full group">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#10b981]/10 to-[#8b5cf6]/10 opacity-30" />
+            <Card className="shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 relative overflow-hidden h-full group">
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-100/50 to-transparent dark:from-slate-800/10 dark:to-brand-900/10 opacity-30" />
               
               <Link to="/notes" className="absolute inset-0 z-20 cursor-pointer"></Link>
-              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 dark:group-hover:bg-white/5 transition-colors z-10 pointer-events-none" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 dark:bg-white/0 dark:group-hover:bg-white/5 transition-colors z-10 pointer-events-none" />
 
               <div className="relative pointer-events-none z-10">
-                <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-4 flex items-center gap-2 group-hover:text-emerald-500 transition-colors">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span> Weekly Goals
+                <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-4 flex items-center gap-2 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                  <span className="w-2 h-2 rounded-full bg-brand-500 shadow-sm dark:shadow-[0_0_8px_#64748b]"></span> Weekly Goals
                 </h3>
                 <div className="space-y-3">
                   <div>
@@ -232,8 +232,8 @@ export function DashboardPage() {
                       <span>Create 5 Notes</span>
                       <span>{Math.min(5, data?.weeklyNoteCount ?? 0)}/5</span>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-full rounded-full shadow-[0_0_10px_#10b981]" style={{ width: `${Math.min(100, ((data?.weeklyNoteCount ?? 0) / 5) * 100)}%` }} />
+                    <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2">
+                      <div className="bg-brand-500 h-full rounded-full" style={{ width: `${Math.min(100, ((data?.weeklyNoteCount ?? 0) / 5) * 100)}%` }} />
                     </div>
                   </div>
                   <div>
@@ -241,8 +241,8 @@ export function DashboardPage() {
                       <span>Take 3 Quizzes</span>
                       <span>{Math.min(3, data?.weeklyQuizCount ?? 0)}/3</span>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-purple-400 to-purple-600 h-full rounded-full shadow-[0_0_10px_#8b5cf6]" style={{ width: `${Math.min(100, ((data?.weeklyQuizCount ?? 0) / 3) * 100)}%` }} />
+                    <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2">
+                      <div className="bg-slate-500 dark:bg-slate-400 h-full rounded-full" style={{ width: `${Math.min(100, ((data?.weeklyQuizCount ?? 0) / 3) * 100)}%` }} />
                     </div>
                   </div>
                 </div>
@@ -257,7 +257,7 @@ export function DashboardPage() {
         {/* Quick actions */}
         <Draggable>
           <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="cursor-move">
-            <Card className="shadow-2xl shadow-[#00f0ff]/10 dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10">
+            <Card className="shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10">
               <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4 pointer-events-none">Quick Actions</h2>
               <div className="space-y-2">
                 <Link to="/notes/new">
@@ -304,7 +304,7 @@ export function DashboardPage() {
         {/* Recent notes */}
         <Draggable>
           <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 }} className="cursor-move">
-            <Card className="shadow-2xl shadow-[#d946ef]/10 dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10">
+            <Card className="shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10">
               <div className="flex items-center justify-between mb-4 pointer-events-none">
                 <h2 className="text-base font-semibold text-gray-900 dark:text-white">Recent Notes</h2>
                 <Link to="/notes" className="text-xs text-brand-600 hover:underline font-medium pointer-events-auto">View all</Link>

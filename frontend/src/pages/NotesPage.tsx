@@ -61,7 +61,7 @@ export function NotesPage() {
           placeholder="Search notes..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white/5 dark:bg-white/5 backdrop-blur-md text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#00f0ff] focus:border-transparent transition-all shadow-[0_0_15px_rgba(0,240,255,0.1)] focus:shadow-[0_0_20px_rgba(0,240,255,0.3)]"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-md text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all shadow-sm focus:shadow-md"
         />
       </div>
 
@@ -94,11 +94,11 @@ export function NotesPage() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ delay: i * 0.04 }}
               >
-                <Card hover className="group relative flex flex-col h-full bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-lg shadow-[#d946ef]/5">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#d946ef]/10 to-[#00f0ff]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <Card hover className="group relative flex flex-col h-full bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50">
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-100/50 to-transparent dark:from-slate-800/50 dark:to-brand-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="flex items-start justify-between mb-3 relative z-10">
-                    <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(217,70,239,0.2)]">
-                      <FileText className="w-4 h-4 text-[#d946ef]" />
+                    <div className="w-9 h-9 rounded-lg bg-brand-50 dark:bg-white/10 flex items-center justify-center shrink-0 shadow-sm">
+                      <FileText className="w-4 h-4 text-brand-600 dark:text-brand-400" />
                     </div>
                     <button
                       onClick={(e) => {
@@ -112,7 +112,7 @@ export function NotesPage() {
                   </div>
 
                   <Link to={`/notes/${note.id}`} className="flex-1 block relative z-10">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-[#00f0ff] transition-colors drop-shadow-sm">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors drop-shadow-sm">
                       {note.title}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
