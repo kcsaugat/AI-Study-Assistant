@@ -1,0 +1,116 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "rhel-openssl-1.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  notes        Note[]
+  chatSessions ChatSession[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  fileUrl   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  summary   Summary?
+  quizzes   Quiz[]
+  flashcardDecks FlashcardDeck[]
+  chatSessions   ChatSession[]
+}
+
+model Summary {
+  id        String   @id @default(uuid())
+  content   String
+  noteId    String   @unique
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Quiz {
+  id        String       @id @default(uuid())
+  title     String
+  noteId    String
+  note      Note         @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  questions Question[]
+  createdAt DateTime     @default(now())
+}
+
+model Question {
+  id            String   @id @default(uuid())
+  quizId        String
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionText  String
+  options       String   // JSON array stored as string
+  correctAnswer Int      // index of correct option
+  explanation   String?
+  createdAt     DateTime @default(now())
+}
+
+model FlashcardDeck {
+  id         String      @id @default(uuid())
+  title      String
+  noteId     String
+  note       Note        @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  flashcards Flashcard[]
+  createdAt  DateTime    @default(now())
+}
+
+model Flashcard {
+  id       String        @id @default(uuid())
+  deckId   String
+  deck     FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  front    String
+  back     String
+  createdAt DateTime     @default(now())
+}
+
+model ChatSession {
+  id        String        @id @default(uuid())
+  title     String
+  noteId    String?
+  note      Note?         @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model ChatMessage {
+  id        String      @id @default(uuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String      // "user" | "assistant"
+  content   String
+  createdAt DateTime    @default(now())
+}

@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/server.ts" }
+  ],
+  "env": {
+    "DATABASE_URL": "file:/tmp/dev.db",
+    "JWT_SECRET": "my-secret-key-for-jwt-12345",
+    "JWT_REFRESH_SECRET": "my-secret-key-for-refresh-12345",
+    "VERCEL": "1"
+  }
+}
