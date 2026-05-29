@@ -1,7 +1,8 @@
 import { motion, useAnimation, animate, MotionValue } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 export function AnimatedBot({ charX }: { charX: MotionValue<number> }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const controls = useAnimation(); // Used for other transforms like jumping
   const [facing, setFacing] = useState<'right' | 'left'>('right');
   const [isWalking, setIsWalking] = useState(false);
@@ -16,13 +17,17 @@ export function AnimatedBot({ charX }: { charX: MotionValue<number> }) {
       await new Promise(r => setTimeout(r, 500));
       
       while (isActive) {
+        // Measure dynamically every loop so it responds to window resizes
+        const parentWidth = containerRef.current?.parentElement?.offsetWidth || 300;
+        const rightEdge = parentWidth - 90; // Stop just before the emoji
+
         // Turn right, pause briefly
         setFacing('right');
         await new Promise(r => setTimeout(r, 200));
         
-        // Walk Right (exactly to the 't')
+        // Walk Right
         setIsWalking(true);
-        await animate(charX, 440, { duration: 6.5, ease: "linear" });
+        await animate(charX, rightEdge, { duration: 6.5, ease: "linear" });
         if (!isActive) break;
 
         // Stop at right edge and wave at the emoji
@@ -60,7 +65,7 @@ export function AnimatedBot({ charX }: { charX: MotionValue<number> }) {
   const stateClass = isWaving ? 'state-waving' : (isJumping ? 'state-jumping' : (isWalking ? 'state-walking' : 'state-idle'));
 
   return (
-    <div className="relative w-full h-full pointer-events-none flex items-end">
+    <div ref={containerRef} className="relative w-full h-full pointer-events-none flex items-end">
       
       {/* 
         BULLETPROOF CSS ANIMATIONS 
