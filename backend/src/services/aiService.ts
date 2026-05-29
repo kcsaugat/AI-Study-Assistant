@@ -408,11 +408,68 @@ export async function sendChatMessage(
       
       formattedMessages.push({ role: 'user', content: userMessage });
 
-      const chatCompletion = await groq.chat.completions.create({
+      const tools = [
+        {
+          type: "function" as const,
+          function: {
+            name: "searchWikipedia",
+            description: "Search Wikipedia for real-time and up-to-date information. Use this whenever the user asks for facts, current events, or information you don't know.",
+            parameters: {
+              type: "object",
+              properties: { query: { type: "string" } },
+              required: ["query"]
+            }
+          }
+        }
+      ];
+
+      let chatCompletion = await groq.chat.completions.create({
         messages: formattedMessages,
         model: MODEL,
+        tools,
       });
-      assistantMessage = chatCompletion.choices[0]?.message?.content || '';
+
+      const responseMessage = chatCompletion.choices[0]?.message;
+
+      if (responseMessage?.tool_calls?.length) {
+        // Append assistant's tool call request
+        formattedMessages.push(responseMessage as any);
+
+        // Execute each tool call
+        for (const toolCall of responseMessage.tool_calls) {
+          if (toolCall.function.name === 'searchWikipedia') {
+            const args = JSON.parse(toolCall.function.arguments || '{}');
+            try {
+              const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(args.query)}&utf8=&format=json`;
+              const res = await fetch(url);
+              const data = await res.json();
+              const topHits = data.query?.search?.slice(0, 3) || [];
+              const wikiContent = topHits.map((hit: any) => `${hit.title}: ${hit.snippet.replace(/<[^>]+>/g, '')}`).join('\n\n') || "No results found.";
+              
+              formattedMessages.push({
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                content: wikiContent
+              });
+            } catch (err) {
+              formattedMessages.push({
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                content: "Failed to search Wikipedia."
+              });
+            }
+          }
+        }
+
+        // Second pass with tool results
+        chatCompletion = await groq.chat.completions.create({
+          messages: formattedMessages,
+          model: MODEL,
+        });
+        assistantMessage = chatCompletion.choices[0]?.message?.content || '';
+      } else {
+        assistantMessage = responseMessage?.content || '';
+      }
     } catch (error) {
       console.warn("Groq chat error, using fallback mock:", error);
       assistantMessage = `I'm your AI tutor! You said: "${userMessage}". I am currently operating in offline mode, but I'm still here to help you study.`;
