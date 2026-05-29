@@ -74,7 +74,7 @@ export function NewNotePage() {
       }
       toast.success('File text extracted successfully!');
     } catch {
-      toast.error('Failed to parse file. Please try a valid PDF or TXT file.');
+      toast.error('Failed to parse file. Ensure it is a text-based file, PDF, or DOCX.');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -100,7 +100,7 @@ export function NewNotePage() {
               ref={fileInputRef}
               onChange={handleFileUpload}
               className="hidden"
-              accept=".pdf,.txt,image/*"
+              accept="*"
             />
             <Button
               variant="outline"
@@ -135,7 +135,7 @@ export function NewNotePage() {
         </div>
 
         <p className="text-xs text-gray-400 mt-3">
-          Tip: You can now upload a PDF file to instantly extract and inject its text into the editor!
+          Tip: You can now upload ANY file (PDF, DOCX, TXT, CSV, etc.) to instantly extract and inject its text into the editor!
         </p>
       </motion.div>
     </div>

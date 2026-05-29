@@ -17,12 +17,13 @@ export async function uploadFileHandler(req: AuthRequest, res: Response, next: N
       const dataBuffer = fs.readFileSync(filePath);
       const data = await pdfParse(dataBuffer);
       extractedText = data.text;
-    } else if (req.file.mimetype === 'text/plain') {
-      extractedText = fs.readFileSync(filePath, 'utf8');
+    } else if (req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || req.file.originalname.endsWith('.docx')) {
+      const mammoth = require('mammoth');
+      const result = await mammoth.extractRawText({ path: filePath });
+      extractedText = result.value;
     } else {
-      // Clean up unhandled file
-      fs.unlinkSync(filePath);
-      return sendError(res, 'Unsupported file type. Please upload a PDF or TXT file.', 400);
+      // Fallback: try to read as text for ALL other files
+      extractedText = fs.readFileSync(filePath, 'utf8');
     }
 
     // Clean up file after reading
