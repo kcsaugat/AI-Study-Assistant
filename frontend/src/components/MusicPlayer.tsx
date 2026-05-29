@@ -1,8 +1,8 @@
-import { useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Music, Volume2, VolumeX, FastForward } from 'lucide-react';
 import Draggable from 'react-draggable';
-import { useAppStore } from '../../store/appStore';
+import { useAppStore } from '../store/appStore';
 
 const TRACKS = [
   { title: "Deep Focus (Lofi Beats)", url: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3" },

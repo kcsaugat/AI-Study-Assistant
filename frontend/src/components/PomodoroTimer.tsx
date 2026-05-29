@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RotateCcw, Timer } from 'lucide-react';
 import Draggable from 'react-draggable';
-import { useAppStore } from '../../store/appStore';
+import { useAppStore } from '../store/appStore';
 
 export function PomodoroTimer() {
   const { activeWidget, setActiveWidget } = useAppStore();
