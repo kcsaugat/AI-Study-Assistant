@@ -440,11 +440,19 @@ export async function sendChatMessage(
           if (toolCall.function.name === 'searchWikipedia') {
             const args = JSON.parse(toolCall.function.arguments || '{}');
             try {
-              const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(args.query)}&utf8=&format=json`;
-              const res = await fetch(url);
-              const data = (await res.json()) as any;
-              const topHits = data.query?.search?.slice(0, 3) || [];
-              const wikiContent = topHits.map((hit: any) => `${hit.title}: ${hit.snippet.replace(/<[^>]+>/g, '')}`).join('\n\n') || "No results found.";
+              const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(args.query)}&utf8=&format=json`;
+              const searchRes = await fetch(searchUrl);
+              const searchData = (await searchRes.json()) as any;
+              
+              let wikiContent = "No results found.";
+              if (searchData.query?.search?.length > 0) {
+                const topHit = searchData.query.search[0];
+                const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&pageids=${topHit.pageid}&format=json`;
+                const extractRes = await fetch(extractUrl);
+                const extractData = (await extractRes.json()) as any;
+                const extract = extractData.query?.pages[topHit.pageid]?.extract || topHit.snippet.replace(/<[^>]+>/g, '');
+                wikiContent = `Title: ${topHit.title}\n\n${extract}`;
+              }
               
               formattedMessages.push({
                 role: 'tool',
