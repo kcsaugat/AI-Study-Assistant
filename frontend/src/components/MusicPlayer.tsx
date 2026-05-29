@@ -85,7 +85,7 @@ export function MusicPlayer() {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="pointer-events-auto absolute bottom-40 right-4 md:right-6 w-[calc(100vw-2rem)] sm:w-80 bg-[#0a0a0f]/90 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-[0_0_40px_rgba(14,165,233,0.2)] overflow-hidden neon-card"
+                className="pointer-events-auto absolute bottom-40 left-4 right-4 mx-auto w-auto max-w-sm sm:left-auto sm:right-6 sm:w-80 sm:mx-0 bg-[#0a0a0f]/90 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-[0_0_40px_rgba(14,165,233,0.2)] overflow-hidden neon-card"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-[#10b981]/10 to-[#0ea5e9]/10 pointer-events-none" />
                 
@@ -95,7 +95,7 @@ export function MusicPlayer() {
                     <Music className="w-4 h-4" />
                     <span className="text-sm font-semibold text-white">Focus Player</span>
                   </div>
-                  <button type="button" onClick={() => setIsOpen(false)} onPointerDown={(e) => e.stopPropagation()} className="cancel-drag p-1 text-gray-400 hover:text-white transition-colors">
+                  <button type="button" onClick={() => setIsOpen(false)} onPointerDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} className="cancel-drag p-1 text-gray-400 hover:text-white transition-colors">
                     &times;
                   </button>
                 </div>

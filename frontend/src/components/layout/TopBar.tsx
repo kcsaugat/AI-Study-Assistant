@@ -52,7 +52,7 @@ export function TopBar({ onMenuClick, title = '' }: TopBarProps) {
       </div>
 
       {title && (
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none mx-12 sm:mx-20 lg:mx-32">
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none pl-14 pr-24 sm:mx-20 lg:mx-32">
           <motion.div
             animate={escapeX !== null ? { x: escapeX } : { x: [-180, 180] }}
             transition={escapeX !== null 
@@ -71,7 +71,7 @@ export function TopBar({ onMenuClick, title = '' }: TopBarProps) {
               {/* Running Water Stream */}
               <div className="running-water dark:hidden"></div>
 
-              <h1 className="relative z-10 text-3xl sm:text-4xl font-black uppercase tracking-widest text-3d-scifi">
+              <h1 className="relative z-10 text-2xl sm:text-3xl lg:text-4xl font-black uppercase tracking-widest text-3d-scifi truncate">
                 {title}
               </h1>
             </div>

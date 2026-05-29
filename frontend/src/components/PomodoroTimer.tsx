@@ -56,7 +56,7 @@ export function PomodoroTimer() {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="pointer-events-auto absolute bottom-24 right-4 md:right-6 w-[calc(100vw-2rem)] sm:w-72 bg-[#0a0a0f]/80 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden neon-card"
+                className="pointer-events-auto absolute bottom-24 left-4 right-4 mx-auto w-auto max-w-sm sm:left-auto sm:right-6 sm:w-72 sm:mx-0 bg-[#0a0a0f]/80 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden neon-card"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-[#8b5cf6]/10 to-[#10b981]/10 pointer-events-none" />
                 <div className="p-4 border-b border-white/10 flex justify-between items-center drag-handle cursor-move bg-white/5">
@@ -64,7 +64,7 @@ export function PomodoroTimer() {
                     <Timer className="w-4 h-4 text-[#10b981]" />
                     <span className="text-sm font-semibold text-white">Focus Timer</span>
                   </div>
-                  <button type="button" onClick={() => setIsOpen(false)} onPointerDown={(e) => e.stopPropagation()} className="cancel-drag p-1 text-gray-400 hover:text-white transition-colors">
+                  <button type="button" onClick={() => setIsOpen(false)} onPointerDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} className="cancel-drag p-1 text-gray-400 hover:text-white transition-colors">
                     &times;
                   </button>
                 </div>
