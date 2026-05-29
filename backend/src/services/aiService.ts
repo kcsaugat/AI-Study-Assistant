@@ -395,7 +395,7 @@ export async function sendChatMessage(
         ? `You are a helpful AI study tutor. The student is studying the following material:\n\n${session.note.content}\n\nAnswer questions based on this material. Be clear, encouraging, and educational.`
         : 'You are a helpful AI study tutor. Help students understand their study material. Be clear, encouraging, and educational.';
 
-      const formattedMessages: { role: 'system' | 'user' | 'assistant', content: string }[] = [
+      const formattedMessages: any[] = [
         { role: 'system', content: systemPrompt },
       ];
 
@@ -442,7 +442,7 @@ export async function sendChatMessage(
             try {
               const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(args.query)}&utf8=&format=json`;
               const res = await fetch(url);
-              const data = await res.json();
+              const data = (await res.json()) as any;
               const topHits = data.query?.search?.slice(0, 3) || [];
               const wikiContent = topHits.map((hit: any) => `${hit.title}: ${hit.snippet.replace(/<[^>]+>/g, '')}`).join('\n\n') || "No results found.";
               
