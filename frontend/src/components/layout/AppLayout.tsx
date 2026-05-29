@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { BottomNav } from './BottomNav';
 import { useAppStore } from '../../store/appStore';
 
 import { PomodoroTimer } from '../PomodoroTimer';
@@ -54,7 +55,7 @@ export function AppLayout() {
           <div className={`transition-all duration-500 z-40 shrink-0 ${zenMode ? 'bg-transparent border-transparent opacity-30 hover:opacity-100' : 'bg-white/40 dark:bg-black/40 backdrop-blur-xl border-b border-gray-100/80 dark:border-white/5'}`}>
             <TopBar onMenuClick={() => setSidebarOpen(true)} title={zenMode ? '' : title} />
           </div>
-          <main className="flex-1 relative w-full overflow-y-auto overflow-x-hidden mt-5" onClick={handleMainClick}>
+          <main className="flex-1 relative w-full overflow-y-auto overflow-x-hidden mt-5 pb-24 sm:pb-0" onClick={handleMainClick}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
@@ -68,6 +69,7 @@ export function AppLayout() {
               </motion.div>
             </AnimatePresence>
           </main>
+          {!zenMode && <BottomNav />}
         </div>
       </div>
       

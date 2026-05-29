@@ -190,10 +190,10 @@ export function DashboardPage() {
       >
         <div className="relative inline-flex items-end mt-4">
           {/* 3D Greeting Text acting as a localized flexible rope */}
-          <h1 
-            className="relative z-20 text-4xl sm:text-5xl font-black text-3d-bridge select-none flex items-center whitespace-nowrap"
-            style={{ transformStyle: 'preserve-3d', transformOrigin: 'center' }}
-          >
+            <h1 
+              className="relative z-20 text-2xl sm:text-5xl font-black text-3d-bridge select-none flex items-center whitespace-nowrap"
+              style={{ transformStyle: 'preserve-3d', transformOrigin: 'center' }}
+            >
             <BouncyRopeText text={`${greeting()}, ${user?.name?.split(' ')[0] || 'Friend'}`} charX={charX} />
             <motion.span 
               className="inline-block ml-3" 
@@ -217,9 +217,8 @@ export function DashboardPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        whileHover={{ scale: 1.02, rotateX: 4, rotateY: 2, y: -4 }}
-        whileTap={{ scale: 1.05, rotateX: 8, y: -10 }}
-        style={{ transformStyle: 'preserve-3d', perspective: 1000 }}
+        whileHover={{ scale: 1.01, y: -2 }}
+        whileTap={{ scale: 0.98 }}
         className="relative overflow-hidden rounded-[2rem] bg-white/40 dark:bg-black/10 backdrop-blur-[32px] p-6 sm:p-8 mb-8 neon-card group cursor-pointer"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/0 to-transparent group-hover:via-blue-500/40 transition-all duration-700 pointer-events-none z-0" />
@@ -236,8 +235,8 @@ export function DashboardPage() {
         />
         <div className="relative grid gap-6 lg:grid-cols-[1fr_280px] items-center">
           <div>
-            <p className="text-sm uppercase tracking-[0.32em] text-slate-600 dark:text-slate-400 font-bold">AI Study Command Center</p>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">Study smarter with instant notes, summaries, and AI tutoring.</h2>
+            <p className="text-xs sm:text-sm uppercase tracking-[0.32em] text-slate-600 dark:text-slate-400 font-bold">AI Study Command Center</p>
+            <h2 className="mt-3 text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">Study smarter with instant notes, summaries, and AI tutoring.</h2>
             <p className="mt-4 text-sm text-slate-800 dark:text-slate-200 max-w-2xl leading-7 font-semibold">
               Easily manage your study material, generate quizzes and flashcards, and keep everything mobile-friendly on laptop or phone.
             </p>
@@ -256,9 +255,9 @@ export function DashboardPage() {
       </motion.div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8 relative z-10">
+      <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 mb-8 relative z-10 pb-4 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 sm:overflow-visible sm:pb-0">
         {stats.map((s, i) => (
-          <div key={s.label}>
+          <div key={s.label} className="min-w-[140px] sm:min-w-0 snap-start flex-shrink-0">
             <motion.div 
               custom={i} 
               variants={cardVariants} 
@@ -268,9 +267,8 @@ export function DashboardPage() {
             >
               <motion.div
                 onClick={(e) => handleCardClick(e, s.path)}
-                whileHover={{ scale: 1.05, rotateX: 10, rotateY: 5, y: -10 }}
-                whileTap={{ scale: 1.15, rotateX: 20, y: -20 }}
-                style={{ transformStyle: 'preserve-3d', perspective: 1000 }}
+                whileHover={{ scale: 1.05, y: -5 }}
+                whileTap={{ scale: 0.95 }}
                 className="bg-white/50 dark:bg-black/10 text-center neon-card relative overflow-hidden group rounded-2xl p-6 h-full flex flex-col justify-center"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/0 to-transparent group-hover:via-emerald-500/40 transition-all duration-700 pointer-events-none z-0" />
@@ -314,9 +312,8 @@ export function DashboardPage() {
             initial={{ opacity: 0, scale: 0.95 }} 
             animate={{ opacity: 1, scale: 1 }} 
             transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.2 }} 
-            whileHover={{ scale: 1.03, rotateX: 8, rotateY: 4, y: -6, transition: { type: 'spring', stiffness: 500, damping: 20 } }}
-            whileTap={{ scale: 0.98, rotateX: 12, y: 0 }}
-            style={{ transformStyle: 'preserve-3d', perspective: 1200 }}
+            whileHover={{ scale: 1.02, y: -4 }}
+            whileTap={{ scale: 0.98 }}
             className="relative h-full"
           >
             <Card className="neon-card relative overflow-hidden h-full group bg-white/50 dark:bg-black/10">
@@ -376,9 +373,8 @@ export function DashboardPage() {
             initial={{ opacity: 0, scale: 0.95 }} 
             animate={{ opacity: 1, scale: 1 }} 
             transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.25 }} 
-            whileHover={{ scale: 1.03, rotateX: 8, rotateY: 4, y: -6, transition: { type: 'spring', stiffness: 500, damping: 20 } }}
-            whileTap={{ scale: 0.98, rotateX: 12, y: 0 }}
-            style={{ transformStyle: 'preserve-3d', perspective: 1200 }}
+            whileHover={{ scale: 1.02, y: -4 }}
+            whileTap={{ scale: 0.98 }}
             className="relative h-full"
           >
             <Card className="neon-card relative overflow-hidden h-full group bg-white/50 dark:bg-black/10">
@@ -449,9 +445,8 @@ export function DashboardPage() {
             >
               <motion.div
                 onClick={() => setIsMagicModalOpen(true)}
-                whileHover={{ scale: 1.03, rotateX: 8, rotateY: 4, y: -6, transition: { type: 'spring', stiffness: 500, damping: 20 } }}
-                whileTap={{ scale: 0.98, rotateX: 12, y: 0 }}
-                style={{ transformStyle: 'preserve-3d' }}
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
                 className="neon-card relative overflow-hidden h-full group bg-white/50 dark:bg-black/10 rounded-2xl p-6 border border-white/20 dark:border-white/10 cursor-pointer"
               >
                 {/* Glowing Gradient Border on Hover */}
@@ -491,9 +486,8 @@ export function DashboardPage() {
           >
             <motion.div
               onClick={() => setIsBrainSyncModalOpen(true)}
-              whileHover={{ scale: 1.03, rotateX: 8, rotateY: 4, y: -6, transition: { type: 'spring', stiffness: 500, damping: 20 } }}
-              whileTap={{ scale: 0.98, rotateX: 12, y: 0 }}
-              style={{ transformStyle: 'preserve-3d' }}
+              whileHover={{ scale: 1.02, y: -4 }}
+              whileTap={{ scale: 0.98 }}
               className="neon-card relative overflow-hidden h-full group bg-white/50 dark:bg-black/10 rounded-2xl p-6 border border-white/20 dark:border-white/10 cursor-pointer"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/0 to-transparent group-hover:via-cyan-500/40 transition-all duration-700 pointer-events-none z-0" />
@@ -559,9 +553,8 @@ export function DashboardPage() {
           >
             <motion.div
               onClick={() => setIsFocusModalOpen(true)}
-              whileHover={{ scale: 1.03, rotateX: 8, rotateY: 4, y: -6, transition: { type: 'spring', stiffness: 500, damping: 20 } }}
-              whileTap={{ scale: 0.98, rotateX: 12, y: 0 }}
-              style={{ transformStyle: 'preserve-3d' }}
+              whileHover={{ scale: 1.02, y: -4 }}
+              whileTap={{ scale: 0.98 }}
               className="neon-card relative overflow-hidden h-full group bg-white/50 dark:bg-black/10 rounded-2xl p-6 border border-white/20 dark:border-white/10 cursor-pointer"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-fuchsia-400/0 to-transparent group-hover:via-fuchsia-500/40 transition-all duration-700 pointer-events-none z-0" />
@@ -617,9 +610,8 @@ export function DashboardPage() {
             initial={{ opacity: 0, x: -16 }} 
             animate={{ opacity: 1, x: 0 }} 
             transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.3 }} 
-            whileHover={{ scale: 1.03, rotateX: 8, rotateY: 4, y: -6, transition: { type: 'spring', stiffness: 500, damping: 20 } }}
-            whileTap={{ scale: 0.98, rotateX: 12, y: 0 }}
-            style={{ transformStyle: 'preserve-3d', perspective: 1200 }}
+            whileHover={{ scale: 1.02, y: -4 }}
+            whileTap={{ scale: 0.98 }}
             className="h-full"
           >
             <Card className="neon-card bg-white/50 dark:bg-black/10 relative overflow-hidden group h-[320px] flex flex-col">
@@ -674,9 +666,8 @@ export function DashboardPage() {
             initial={{ opacity: 0, x: 16 }} 
             animate={{ opacity: 1, x: 0 }} 
             transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.35 }} 
-            whileHover={{ scale: 1.03, rotateX: 8, rotateY: 4, y: -6, transition: { type: 'spring', stiffness: 500, damping: 20 } }}
-            whileTap={{ scale: 0.98, rotateX: 12, y: 0 }}
-            style={{ transformStyle: 'preserve-3d', perspective: 1200 }}
+            whileHover={{ scale: 1.02, y: -4 }}
+            whileTap={{ scale: 0.98 }}
             className="h-full"
           >
             <Card className="neon-card bg-white/50 dark:bg-black/10 relative overflow-hidden group h-[320px] flex flex-col">
