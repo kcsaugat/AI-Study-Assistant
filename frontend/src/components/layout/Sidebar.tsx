@@ -64,7 +64,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Mobile overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
           onClick={onClose}
         />
       )}
@@ -74,7 +74,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         initial={false}
         animate={{ x: open ? 0 : '-100%' }}
         transition={{ type: 'spring', stiffness: 400, damping: 40 }}
-        className="fixed left-0 top-0 bottom-0 z-40 w-64 bg-white/80 dark:bg-gray-950/80 backdrop-blur-3xl border-r border-gray-200/50 dark:border-white/10 flex flex-col shadow-2xl"
+        className="fixed left-0 top-0 bottom-0 z-[70] w-64 bg-white/80 dark:bg-gray-950/80 backdrop-blur-3xl border-r border-gray-200/50 dark:border-white/10 flex flex-col shadow-2xl"
       >
         {/* Logo */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800">
