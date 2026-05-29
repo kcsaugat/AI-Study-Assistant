@@ -59,7 +59,7 @@ export function TopBar({ onMenuClick, title = '' }: TopBarProps) {
               ? { type: 'spring', stiffness: 300, damping: 20 }
               : { repeat: Infinity, repeatType: "reverse", duration: 5, ease: "easeInOut" }
             }
-            className="relative pointer-events-auto"
+            className="relative pointer-events-none"
           >
             <div className="glass-bottle">
               {/* Transparent Water Droplets on Bottle */}
@@ -79,7 +79,7 @@ export function TopBar({ onMenuClick, title = '' }: TopBarProps) {
         </div>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 relative z-50 pointer-events-auto">
         <button
           onClick={toggleZenMode}
           className={`p-2 rounded-2xl transition-all duration-150 ${zenMode ? 'text-cyan-600 dark:text-cyan-400 bg-white/40 dark:bg-gray-900/50' : 'text-slate-700 dark:text-slate-200 bg-white/30 dark:bg-slate-900/70'} border border-white/20 dark:border-white/10 shadow-md shadow-sky-500/10 hover:-translate-y-0.5 hover:scale-105`}
