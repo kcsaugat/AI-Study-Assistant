@@ -1,18 +1,22 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Upload } from 'lucide-react';
 import { notesApi } from '../api/notes';
+import { uploadApi } from '../api/upload';
 import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
 import { Button } from '../components/ui/Button';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import Tesseract from 'tesseract.js';
 
 export function NewNotePage() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -23,13 +27,57 @@ export function NewNotePage() {
     try {
       const res = await notesApi.create({ title: title.trim(), content: content.trim() });
       queryClient.invalidateQueries({ queryKey: ['notes'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Note saved!');
       navigate(`/notes/${res.data.data.id}`);
     } catch {
       toast.error('Failed to save note');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    
+    // OCR for Images
+    if (file.type.startsWith('image/')) {
+      try {
+        toast('Processing image text (OCR)...', { icon: '🔍' });
+        const { data: { text } } = await Tesseract.recognize(file, 'eng');
+        
+        if (text.trim()) {
+          setContent(prev => (prev ? `${prev}\n\n${text.trim()}` : text.trim()));
+          if (!title) setTitle(file.name.replace(/\.[^/.]+$/, ""));
+          toast.success('Text extracted from image!');
+        } else {
+          toast.error('No text found in image.');
+        }
+      } catch (err) {
+        toast.error('Failed to process image');
+      } finally {
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Backend parse for PDFs/TXT
+    try {
+      const res = await uploadApi.uploadFile(file);
+      setContent(prev => (prev ? `${prev}\n\n${res.data.data.text}` : res.data.data.text));
+      if (!title) {
+        setTitle(file.name.replace(/\.[^/.]+$/, ""));
+      }
+      toast.success('File text extracted successfully!');
+    } catch {
+      toast.error('Failed to parse file. Please try a valid PDF or TXT file.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -46,10 +94,27 @@ export function NewNotePage() {
             </button>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">New Note</h1>
           </div>
-          <Button onClick={handleSave} loading={saving}>
-            <Save className="w-4 h-4" />
-            Save Note
-          </Button>
+          <div className="flex items-center gap-3">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              className="hidden"
+              accept=".pdf,.txt,image/*"
+            />
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              loading={uploading}
+            >
+              <Upload className="w-4 h-4" />
+              Upload Document/Image
+            </Button>
+            <Button onClick={handleSave} loading={saving}>
+              <Save className="w-4 h-4" />
+              Save Note
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -61,7 +126,7 @@ export function NewNotePage() {
           />
           <Textarea
             label="Notes"
-            placeholder="Paste or type your study material here..."
+            placeholder="Paste, type your study material, or upload a PDF to extract text..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={18}
@@ -70,7 +135,7 @@ export function NewNotePage() {
         </div>
 
         <p className="text-xs text-gray-400 mt-3">
-          Tip: The more detailed your notes, the better the AI-generated summaries, quizzes, and flashcards.
+          Tip: You can now upload a PDF file to instantly extract and inject its text into the editor!
         </p>
       </motion.div>
     </div>

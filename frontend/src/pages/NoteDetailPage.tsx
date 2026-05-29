@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -17,6 +17,7 @@ import { PageSpinner } from '../components/ui/Spinner';
 import { Badge } from '../components/ui/Badge';
 import { QuizPlayer } from '../components/QuizPlayer';
 import { FlashcardViewer } from '../components/FlashcardViewer';
+import { PodcastPlayer } from '../components/PodcastPlayer';
 import { formatDate } from '../utils/format';
 import toast from 'react-hot-toast';
 import { Quiz, FlashcardDeck } from '../types';
@@ -26,9 +27,11 @@ type Tab = 'note' | 'summary' | 'quiz' | 'flashcards';
 export function NoteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
 
-  const [tab, setTab] = useState<Tab>('note');
+  const initialTab = searchParams.get('quiz') ? 'quiz' : searchParams.get('flashcardDeck') ? 'flashcards' : 'note';
+  const [tab, setTab] = useState<Tab>(initialTab as Tab);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
@@ -62,6 +65,7 @@ export function NoteDetailPage() {
     onSuccess: () => {
       refetchSummary();
       queryClient.invalidateQueries({ queryKey: ['notes'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Summary generated!');
     },
     onError: () => toast.error('Failed to generate summary'),
@@ -71,6 +75,8 @@ export function NoteDetailPage() {
     mutationFn: () => aiApi.generateQuiz(id!, 5),
     onSuccess: () => {
       refetchQuizzes();
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['quizzes', 'all'] });
       toast.success('Quiz generated!');
     },
     onError: () => toast.error('Failed to generate quiz'),
@@ -80,6 +86,8 @@ export function NoteDetailPage() {
     mutationFn: () => aiApi.generateFlashcards(id!, 10),
     onSuccess: () => {
       refetchDecks();
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['flashcards', 'all'] });
       toast.success('Flashcards generated!');
     },
     onError: () => toast.error('Failed to generate flashcards'),
@@ -90,6 +98,7 @@ export function NoteDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['note', id] });
       queryClient.invalidateQueries({ queryKey: ['notes'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       setEditing(false);
       toast.success('Note updated');
     },
@@ -100,8 +109,78 @@ export function NoteDetailPage() {
     mutationFn: () => notesApi.delete(id!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       navigate('/notes');
       toast.success('Note deleted');
+    },
+  });
+
+  const deleteFlashcardMutation = useMutation({
+    mutationFn: (deckId: string) => aiApi.deleteFlashcardDeck(id!, deckId),
+    onMutate: async (deckId) => {
+      // Optimistic update
+      await queryClient.cancelQueries({ queryKey: ['flashcards', id] });
+      const previousDecks = queryClient.getQueryData(['flashcards', id]);
+      queryClient.setQueryData(['flashcards', id], (old: any) => 
+        old?.filter((deck: any) => deck.id !== deckId)
+      );
+      return { previousDecks };
+    },
+    onSuccess: () => {
+      toast.success('Flashcards deleted');
+      queryClient.invalidateQueries({ queryKey: ['flashcards', id] });
+      queryClient.invalidateQueries({ queryKey: ['flashcards', 'all'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    },
+    onError: (_err, _newDeck, context) => {
+      toast.error('Failed to delete flashcards');
+      if (context?.previousDecks) {
+        queryClient.setQueryData(['flashcards', id], context.previousDecks);
+      }
+    },
+  });
+
+  const deleteQuizMutation = useMutation({
+    mutationFn: (quizId: string) => aiApi.deleteQuiz(id!, quizId),
+    onMutate: async (quizId) => {
+      await queryClient.cancelQueries({ queryKey: ['quizzes', id] });
+      const previousQuizzes = queryClient.getQueryData(['quizzes', id]);
+      queryClient.setQueryData(['quizzes', id], (old: any) => 
+        old?.filter((quiz: any) => quiz.id !== quizId)
+      );
+      return { previousQuizzes };
+    },
+    onSuccess: () => {
+      toast.success('Quiz deleted');
+      queryClient.invalidateQueries({ queryKey: ['quizzes', id] });
+      queryClient.invalidateQueries({ queryKey: ['quizzes', 'all'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    },
+    onError: (_err, _newQuiz, context) => {
+      toast.error('Failed to delete quiz');
+      if (context?.previousQuizzes) {
+        queryClient.setQueryData(['quizzes', id], context.previousQuizzes);
+      }
+    },
+  });
+
+  const deleteSummaryMutation = useMutation({
+    mutationFn: () => aiApi.deleteSummary(id!),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['summary', id] });
+      const previousSummary = queryClient.getQueryData(['summary', id]);
+      queryClient.setQueryData(['summary', id], null);
+      return { previousSummary };
+    },
+    onSuccess: () => {
+      toast.success('Summary deleted');
+      queryClient.invalidateQueries({ queryKey: ['summary', id] });
+    },
+    onError: (_err, _vars, context) => {
+      toast.error('Failed to delete summary');
+      if (context?.previousSummary !== undefined) {
+        queryClient.setQueryData(['summary', id], context.previousSummary);
+      }
     },
   });
 
@@ -219,6 +298,9 @@ export function NoteDetailPage() {
                   Chat Tutor
                 </Button>
               </div>
+              <div className="mb-6">
+                <PodcastPlayer text={note.content} title={note.title} />
+              </div>
               <div className="prose prose-sm max-w-none dark:prose-invert">
                 <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-sans leading-relaxed">
                   {note.content}
@@ -249,13 +331,29 @@ export function NoteDetailPage() {
                   </div>
                 </Card>
               ) : summary ? (
-                <Card>
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-                      {(summary as { content?: string; id?: string })?.content ?? (typeof summary === 'string' ? summary : '')}
-                    </p>
-                  </div>
-                </Card>
+                <div className="relative group space-y-4">
+                  <PodcastPlayer 
+                    text={typeof summary === 'string' ? summary : ((summary as { content?: string })?.content ?? '')} 
+                    title="AI Summary" 
+                  />
+                  <Card>
+                    <div className="prose prose-sm max-w-none dark:prose-invert pt-4">
+                      <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                        {(summary as { content?: string; id?: string })?.content ?? (typeof summary === 'string' ? summary : '')}
+                      </p>
+                    </div>
+                  </Card>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to delete this summary?')) {
+                        deleteSummaryMutation.mutate();
+                      }
+                    }}
+                    className="absolute top-24 right-3 sci-fi-delete-btn p-1.5 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                  </button>
+                </div>
               ) : (
                 <Card>
                   <div className="text-center py-8">
@@ -299,7 +397,19 @@ export function NoteDetailPage() {
                 </Card>
               ) : (
                 quizzes.map((quiz: Quiz) => (
-                  <QuizPlayer key={quiz.id} quiz={quiz} />
+                  <div key={quiz.id} className="relative group">
+                    <QuizPlayer quiz={quiz} />
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this quiz?')) {
+                          deleteQuizMutation.mutate(quiz.id);
+                        }
+                      }}
+                      className="absolute top-4 right-12 z-10 sci-fi-delete-btn p-1.5 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                    </button>
+                  </div>
                 ))
               )}
             </div>
@@ -333,7 +443,19 @@ export function NoteDetailPage() {
                 </Card>
               ) : (
                 decks.map((deck: FlashcardDeck) => (
-                  <FlashcardViewer key={deck.id} deck={deck} />
+                  <div key={deck.id} className="relative group mt-4">
+                    <FlashcardViewer deck={deck} />
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this flashcard deck?')) {
+                          deleteFlashcardMutation.mutate(deck.id);
+                        }
+                      }}
+                      className="absolute top-4 right-12 z-10 sci-fi-delete-btn p-1.5 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                    </button>
+                  </div>
                 ))
               )}
             </div>

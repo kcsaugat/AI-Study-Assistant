@@ -15,6 +15,10 @@ import { NewNotePage } from './pages/NewNotePage';
 import { NoteDetailPage } from './pages/NoteDetailPage';
 import { ChatPage } from './pages/ChatPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { LeaderboardPage } from './pages/LeaderboardPage';
+import { QuizzesHubPage } from './pages/QuizzesHubPage';
+import { FlashcardsHubPage } from './pages/FlashcardsHubPage';
+import { PlannerPage } from './pages/PlannerPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,7 +65,11 @@ export default function App() {
               <Route path="/notes" element={<NotesPage />} />
               <Route path="/notes/new" element={<NewNotePage />} />
               <Route path="/notes/:id" element={<NoteDetailPage />} />
+              <Route path="/quizzes" element={<QuizzesHubPage />} />
+              <Route path="/flashcards" element={<FlashcardsHubPage />} />
+              <Route path="/planner" element={<PlannerPage />} />
               <Route path="/chat" element={<ChatPage />} />
+              <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

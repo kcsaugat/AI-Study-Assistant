@@ -18,6 +18,13 @@ export default {
           900: '#0f172a',
           950: '#020617',
         },
+        aurora: {
+          blue: '#3b82f6',
+          purple: '#8b5cf6',
+          pink: '#ec4899',
+          cyan: '#06b6d4',
+          dark: '#0B0C10',
+        },
         surface: {
           dark: '#0a0a0f',
           glass: 'rgba(255, 255, 255, 0.03)',
@@ -35,6 +42,7 @@ export default {
         'float-fast': 'float 3s ease-in-out infinite',
         'glow': 'glow 2s ease-in-out infinite alternate',
         'shimmer': 'shimmer 2s linear infinite',
+        'float-horizontal': 'floatHorizontal 8s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -56,6 +64,10 @@ export default {
         shimmer: {
           '0%': { backgroundPosition: '200% 0' },
           '100%': { backgroundPosition: '-200% 0' },
+        },
+        floatHorizontal: {
+          '0%, 100%': { transform: 'translateX(-30px)' },
+          '50%': { transform: 'translateX(30px)' },
         }
       },
       backgroundImage: {

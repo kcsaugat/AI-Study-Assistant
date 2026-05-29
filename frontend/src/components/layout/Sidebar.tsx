@@ -12,15 +12,25 @@ import {
   LogOut,
   BookOpen,
   X,
+  Trophy,
+  Calendar,
+  Plus,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
 import toast from 'react-hot-toast';
+import { useState } from 'react';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/notes', icon: FileText, label: 'My Notes' },
+  { to: '/flashcards', icon: Layers, label: 'Study Decks' },
+  { to: '/quizzes', icon: HelpCircle, label: 'Quizzes' },
+  { to: '/planner', icon: Calendar, label: 'Planner' },
   { to: '/chat', icon: MessageCircle, label: 'AI Tutor' },
+  { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
@@ -32,6 +42,13 @@ interface SidebarProps {
 export function Sidebar({ open, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const { user, refreshToken, logout } = useAuthStore();
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+  const toggleDark = () => {
+    const isDarkNow = !isDark;
+    setIsDark(isDarkNow);
+    document.documentElement.classList.toggle('dark', isDarkNow);
+  };
 
   const handleLogout = async () => {
     try {
@@ -47,7 +64,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Mobile overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-20 bg-black/40 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
           onClick={onClose}
         />
       )}
@@ -57,7 +74,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         initial={false}
         animate={{ x: open ? 0 : '-100%' }}
         transition={{ type: 'spring', stiffness: 400, damping: 40 }}
-        className="fixed left-0 top-0 bottom-0 z-30 w-64 bg-white/40 dark:bg-gray-950/40 backdrop-blur-2xl border-r border-white/30 dark:border-white/10 flex flex-col lg:translate-x-0 lg:relative lg:z-auto shadow-2xl"
+        className="fixed left-0 top-0 bottom-0 z-40 w-64 bg-white/80 dark:bg-gray-950/80 backdrop-blur-3xl border-r border-gray-200/50 dark:border-white/10 flex flex-col shadow-2xl"
       >
         {/* Logo */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800">
@@ -67,13 +84,24 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             </div>
             <span className="font-bold text-gray-900 dark:text-white text-lg">StudyAI</span>
           </div>
-          <button onClick={onClose} className="lg:hidden p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
+        {/* Quick Action */}
+        <div className="px-4 pt-4 pb-2">
+          <button 
+            onClick={() => { navigate('/notes/new'); onClose(); }}
+            className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-xl font-semibold shadow-md shadow-brand-500/30 transition-all active:scale-95"
+          >
+            <Plus className="w-5 h-5" />
+            Create New Note
+          </button>
+        </div>
+
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        <nav className="flex-1 px-3 py-2 overflow-y-auto">
           <div className="space-y-1">
             {navItems.map(({ to, icon: Icon, label }) => (
               <NavLink
@@ -95,6 +123,16 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             ))}
           </div>
         </nav>
+
+        {/* Utility row */}
+        <div className="flex items-center justify-around px-4 py-2 border-t border-gray-100 dark:border-gray-800">
+          <button onClick={toggleDark} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+          <button onClick={() => toast.success("Help coming soon!")} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <HelpCircle className="w-5 h-5" />
+          </button>
+        </div>
 
         {/* User section */}
         <div className="px-3 py-4 border-t border-gray-100 dark:border-gray-800">

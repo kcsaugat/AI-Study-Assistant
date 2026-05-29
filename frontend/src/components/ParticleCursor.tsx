@@ -69,8 +69,8 @@ export function ParticleCursor() {
       
       // Emit particles on move
       const isDark = document.documentElement.classList.contains('dark');
-      // Use classy silver/blue for dark mode, subtle slate for light mode
-      const color = isDark ? 'rgba(167, 192, 246, ALPHA)' : 'rgba(71, 85, 105, ALPHA)';
+      // Use classy silver/blue for dark mode, royal blue for light mode
+      const color = isDark ? 'rgba(167, 192, 246, ALPHA)' : 'rgba(37, 99, 235, ALPHA)';
       
       for (let i = 0; i < 2; i++) {
         particles.push(new Particle(mouse.x, mouse.y, color));

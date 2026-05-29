@@ -24,12 +24,23 @@ export function NotesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => notesApi.delete(id),
-    onSuccess: () => {
+    onMutate: async (deletedId) => {
+      await queryClient.cancelQueries({ queryKey: ['notes'] });
+      const previousNotes = queryClient.getQueryData(['notes']);
+      queryClient.setQueryData(['notes'], (old: any) => old?.filter((n: Note) => n.id !== deletedId));
+      return { previousNotes };
+    },
+    onError: (err, newTodo, context: any) => {
+      queryClient.setQueryData(['notes'], context.previousNotes);
+      toast.error('Failed to delete note');
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    },
+    onSuccess: () => {
       toast.success('Note deleted');
     },
-    onError: () => toast.error('Failed to delete note'),
   });
 
   const filtered = notes.filter((n: Note) =>
@@ -40,7 +51,7 @@ export function NotesPage() {
   if (isLoading) return <PageSpinner />;
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+    <div className="p-6 lg:p-10 w-full">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Notes</h1>
@@ -61,7 +72,7 @@ export function NotesPage() {
           placeholder="Search notes..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-md text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all shadow-sm focus:shadow-md"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/20 bg-white/50 dark:bg-black/10 backdrop-blur-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-aurora-cyan focus:border-transparent transition-all shadow-sm focus:shadow-md"
         />
       </div>
 
@@ -93,9 +104,10 @@ export function NotesPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ delay: i * 0.04 }}
+                whileHover={{ scale: 1.02, y: -4 }}
               >
-                <Card hover className="group relative flex flex-col h-full bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50">
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-100/50 to-transparent dark:from-slate-800/50 dark:to-brand-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <Card className="group relative flex flex-col h-full bg-white/60 dark:bg-black/10 neon-card overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-aurora-purple/10 to-transparent dark:from-aurora-cyan/10 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="flex items-start justify-between mb-3 relative z-10">
                     <div className="w-9 h-9 rounded-lg bg-brand-50 dark:bg-white/10 flex items-center justify-center shrink-0 shadow-sm">
                       <FileText className="w-4 h-4 text-brand-600 dark:text-brand-400" />

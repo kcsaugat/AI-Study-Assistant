@@ -37,7 +37,7 @@ export function PomodoroTimer() {
       {/* Floating Toggle Button */}
       <motion.button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#10b981] flex items-center justify-center text-white shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:shadow-[0_0_30px_rgba(139,92,246,0.8)]"
+        className="fixed bottom-32 right-8 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#10b981] flex items-center justify-center text-white shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:shadow-[0_0_30px_rgba(139,92,246,0.8)]"
         whileHover={{ scale: 1.1, y: -5 }}
         whileTap={{ scale: 0.9 }}
         initial={{ opacity: 0, scale: 0 }}

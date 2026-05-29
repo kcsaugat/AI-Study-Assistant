@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import {
   createNote, getUserNotes, getNoteById,
-  updateNote, deleteNote, getDashboardStats,
+  updateNote, deleteNote, getDashboardStats, resetDashboardData
 } from '../services/noteService';
 import { sendSuccess, sendError } from '../utils/response';
 
@@ -58,6 +58,16 @@ export async function getDashboardHandler(req: AuthRequest, res: Response, next:
   try {
     const stats = await getDashboardStats(req.user!.userId);
     return sendSuccess(res, stats);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function resetDashboardHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { type } = req.body;
+    await resetDashboardData(req.user!.userId, type);
+    return sendSuccess(res, null, 'Dashboard data reset successfully');
   } catch (err) {
     return next(err);
   }

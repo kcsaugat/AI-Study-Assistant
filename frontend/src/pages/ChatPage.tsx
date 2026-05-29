@@ -56,11 +56,26 @@ export function ChatPage() {
     mutationFn: (noteId?: string) => aiApi.createChatSession(noteId),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       setActiveSession(res.data.data.id);
       setLocalMessages([]);
       toast.success('New chat started');
     },
     onError: () => toast.error('Failed to start chat'),
+  });
+
+  const deleteSessionMutation = useMutation({
+    mutationFn: (sessionId: string) => aiApi.deleteSession(sessionId),
+    onSuccess: (_, deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      if (activeSession === deletedId) {
+        setActiveSession(null);
+        setLocalMessages([]);
+      }
+      toast.success('Chat deleted');
+    },
+    onError: () => toast.error('Failed to delete chat'),
   });
 
   const sendMutation = useMutation({
@@ -141,14 +156,29 @@ export function ChatPage() {
                 key={session.id}
                 onClick={() => setActiveSession(session.id)}
                 className={clsx(
-                  'w-full text-left px-3 py-2.5 rounded-xl text-sm transition-colors mb-1',
+                  'group w-full text-left px-3 py-2.5 rounded-xl text-sm transition-colors mb-1',
                   activeSession === session.id
                     ? 'bg-gradient-to-r from-[#8b5cf6]/20 to-[#10b981]/20 text-white shadow-[0_0_15px_rgba(139,92,246,0.15)]'
                     : 'text-gray-400 hover:bg-white/5 hover:text-white'
                 )}
               >
-                <p className="font-medium truncate">{session.title}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{formatDate(session.updatedAt)}</p>
+                <div className="flex justify-between items-center w-full">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{session.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{formatDate(session.updatedAt)}</p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm('Are you sure you want to delete this chat?')) {
+                        deleteSessionMutation.mutate(session.id);
+                      }
+                    }}
+                    className="sci-fi-delete-btn p-1.5 rounded-lg shrink-0 ml-2 flex items-center justify-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                  </button>
+                </div>
               </button>
             ))
           )}
@@ -224,7 +254,7 @@ export function ChatPage() {
                         className={clsx(
                           'max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed backdrop-blur-md',
                           msg.role === 'user'
-                            ? 'bg-gradient-to-r from-[#8b5cf6]/90 to-[#7c3aed]/90 text-white rounded-br-sm shadow-[0_0_15px_rgba(139,92,246,0.3)]'
+                            ? 'bg-gradient-to-r from-[#8b5cf6]/90 to-[#7c3aed]/90 text-[#ffffff] rounded-br-sm shadow-[0_0_15px_rgba(139,92,246,0.3)]'
                             : 'bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-200 rounded-bl-sm shadow-[0_4px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(16,185,129,0.1)]'
                         )}
                       >
@@ -266,7 +296,7 @@ export function ChatPage() {
                   onKeyDown={handleKeyDown}
                   placeholder="Ask a question... (Enter to send)"
                   rows={1}
-                  className="flex-1 resize-none px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-transparent max-h-32 overflow-y-auto transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)] focus:shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                  className="flex-1 resize-none px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md text-sm text-[#ffffff] focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-transparent max-h-32 overflow-y-auto transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)] focus:shadow-[0_0_20px_rgba(16,185,129,0.3)]"
                   style={{ minHeight: 44 }}
                 />
                 <Button

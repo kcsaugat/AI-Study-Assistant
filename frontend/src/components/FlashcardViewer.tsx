@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { FlashcardDeck } from '../types';
+import { aiApi } from '../api/ai';
+import toast from 'react-hot-toast';
 
 interface FlashcardViewerProps {
   deck: FlashcardDeck;
@@ -14,19 +17,32 @@ export function FlashcardViewer({ deck }: FlashcardViewerProps) {
   const [current, setCurrent] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [direction, setDirection] = useState(0);
+  const queryClient = useQueryClient();
+
+  const reviewMutation = useMutation({
+    mutationFn: ({ id, quality }: { id: string; quality: number }) => aiApi.reviewFlashcard(id, quality),
+    onMutate: () => {
+      // Optimistic instant feedback
+      goNext();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['flashcards'] });
+    },
+    onError: () => toast.error('Failed to submit review'),
+  });
 
   const cards = deck.flashcards;
 
   const goNext = () => {
     setDirection(1);
     setFlipped(false);
-    setTimeout(() => setCurrent((c) => (c + 1) % cards.length), 150);
+    setCurrent((c) => (c + 1) % cards.length);
   };
 
   const goPrev = () => {
     setDirection(-1);
     setFlipped(false);
-    setTimeout(() => setCurrent((c) => (c - 1 + cards.length) % cards.length), 150);
+    setCurrent((c) => (c - 1 + cards.length) % cards.length);
   };
 
   const reset = () => {
@@ -76,7 +92,7 @@ export function FlashcardViewer({ deck }: FlashcardViewerProps) {
                 >
                   <motion.div
                     animate={{ rotateY: flipped ? 180 : 0 }}
-                    transition={{ duration: 0.4 }}
+                    transition={{ duration: 0.25, ease: 'easeOut' }}
                     style={{ perspective: 1000, transformStyle: 'preserve-3d' }}
                     className="relative h-40"
                   >
@@ -97,6 +113,19 @@ export function FlashcardViewer({ deck }: FlashcardViewerProps) {
                   </motion.div>
                 </motion.div>
               </AnimatePresence>
+
+              {flipped && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-center gap-2 mt-4"
+                >
+                  <Button size="sm" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => reviewMutation.mutate({ id: card.id, quality: 1 })}>Again</Button>
+                  <Button size="sm" variant="outline" className="text-orange-500 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-900/20" onClick={() => reviewMutation.mutate({ id: card.id, quality: 2 })}>Hard</Button>
+                  <Button size="sm" variant="outline" className="text-green-500 border-green-200 hover:bg-green-50 dark:hover:bg-green-900/20" onClick={() => reviewMutation.mutate({ id: card.id, quality: 3 })}>Good</Button>
+                  <Button size="sm" variant="outline" className="text-blue-500 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20" onClick={() => reviewMutation.mutate({ id: card.id, quality: 4 })}>Easy</Button>
+                </motion.div>
+              )}
 
               <div className="flex items-center justify-center gap-3 mt-4">
                 <button

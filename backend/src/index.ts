@@ -8,6 +8,8 @@ import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/auth';
 import noteRoutes from './routes/notes';
 import aiRoutes from './routes/ai';
+import uploadRoutes from './routes/upload';
+import gamificationRoutes from './routes/gamification';
 import { errorHandler } from './middleware/errorHandler';
 import fs from 'fs';
 import path from 'path';
@@ -50,6 +52,8 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/gamification', gamificationRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).json({ success: false, message: 'Route not found' }));

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card } from './ui/Card';
@@ -18,19 +18,19 @@ export function QuizPlayer({ quiz }: QuizPlayerProps) {
     Array(quiz.questions.length).fill(null)
   );
   const [finished, setFinished] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(5);
 
-  const questions = quiz.questions.map((q) => ({
-    ...q,
-    options: JSON.parse(q.options) as string[],
-  }));
-
-  const handleSelect = (optIdx: number) => {
-    if (answers[current] !== null) return; // already answered
-    const newAnswers = [...answers];
-    newAnswers[current] = optIdx;
-    setAnswers(newAnswers);
-    setSelected(optIdx);
-  };
+  const questions = quiz.questions?.map((q) => {
+    let parsedOptions: string[] = [];
+    try {
+      parsedOptions = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+      if (!Array.isArray(parsedOptions)) parsedOptions = [];
+    } catch (e) {
+      console.error("Failed to parse options for question", q.id, e);
+      parsedOptions = ['Option 1', 'Option 2', 'Option 3', 'Option 4']; // Fallback
+    }
+    return { ...q, options: parsedOptions };
+  }) || [];
 
   const handleNext = () => {
     if (current < questions.length - 1) {
@@ -41,15 +41,66 @@ export function QuizPlayer({ quiz }: QuizPlayerProps) {
     }
   };
 
+  const handleSelect = (optIdx: number) => {
+    if (answers[current] !== null) return; // already answered
+    const newAnswers = [...answers];
+    newAnswers[current] = optIdx;
+    setAnswers(newAnswers);
+    setSelected(optIdx);
+  };
+
+  // Timer logic
+  useEffect(() => {
+    if (!expanded || finished) return;
+    if (answers[current] !== null) return; // Stop timer if answered
+
+    if (timeLeft === 0) {
+      // Time up! Mark as wrong (-1 or just skip)
+      const newAnswers = [...answers];
+      newAnswers[current] = -1; // -1 means timed out/wrong
+      setAnswers(newAnswers);
+      setSelected(-1);
+      
+      // Auto advance after showing wrong briefly
+      setTimeout(() => {
+        handleNext();
+      }, 1000);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, expanded, finished, answers, current]);
+
+  // Reset timer on new question
+  useEffect(() => {
+    setTimeLeft(5);
+  }, [current]);
+
   const handleReset = () => {
     setCurrent(0);
     setSelected(null);
     setAnswers(Array(questions.length).fill(null));
     setFinished(false);
+    setTimeLeft(5);
   };
 
-  const score = answers.filter((a, i) => a === questions[i].correctAnswer).length;
+  // Calculate score excluding -1 (timeouts)
+  const score = answers.filter((a, i) => questions[i] && a === questions[i].correctAnswer).length;
   const q = questions[current];
+
+  if (!questions || questions.length === 0) {
+    return (
+      <Card>
+        <div className="p-4 text-center text-sm text-gray-500">
+          This quiz has no questions available.
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -93,9 +144,19 @@ export function QuizPlayer({ quiz }: QuizPlayerProps) {
               ) : (
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-medium text-gray-500">
-                      Question {current + 1} of {questions.length}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-medium text-gray-500">
+                        Question {current + 1} of {questions.length}
+                      </span>
+                      {answers[current] === null && (
+                        <span className={clsx(
+                          "text-xs font-bold px-2 py-0.5 rounded-full",
+                          timeLeft <= 2 ? "bg-red-100 text-red-600 animate-pulse" : "bg-brand-100 text-brand-600"
+                        )}>
+                          {timeLeft}s
+                        </span>
+                      )}
+                    </div>
                     <div className="flex gap-1">
                       {questions.map((_, i) => (
                         <div

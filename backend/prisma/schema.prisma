@@ -18,9 +18,18 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  streakResetAt         DateTime?
+  weeklyGoalsResetAt    DateTime?
+  brainSyncResetAt      DateTime?
+  focusAnalyticsResetAt DateTime?
+
   notes        Note[]
   chatSessions ChatSession[]
   refreshTokens RefreshToken[]
+  activityLogs ActivityLog[]
+  badges       Badge[]
+  quizAttempts QuizAttempt[]
+  studyEvents  StudyEvent[]
 }
 
 model RefreshToken {
@@ -62,6 +71,7 @@ model Quiz {
   noteId    String
   note      Note         @relation(fields: [noteId], references: [id], onDelete: Cascade)
   questions Question[]
+  attempts  QuizAttempt[]
   createdAt DateTime     @default(now())
 }
 
@@ -86,12 +96,16 @@ model FlashcardDeck {
 }
 
 model Flashcard {
-  id       String        @id @default(uuid())
-  deckId   String
-  deck     FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
-  front    String
-  back     String
-  createdAt DateTime     @default(now())
+  id           String        @id @default(uuid())
+  deckId       String
+  deck         FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  front        String
+  back         String
+  nextReview   DateTime?
+  interval     Int           @default(0)
+  easeFactor   Float         @default(2.5)
+  repetitions  Int           @default(0)
+  createdAt    DateTime      @default(now())
 }
 
 model ChatSession {
@@ -113,4 +127,45 @@ model ChatMessage {
   role      String      // "user" | "assistant"
   content   String
   createdAt DateTime    @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String   // e.g., "NOTE_CREATED", "QUIZ_TAKEN", "SUMMARY_GENERATED", "FLASHCARD_GENERATED"
+  metadata  String?  // Optional JSON string for extra proof
+  createdAt DateTime @default(now())
+}
+
+model Badge {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String
+  icon        String
+  earnedAt    DateTime @default(now())
+}
+
+model QuizAttempt {
+  id             String   @id @default(uuid())
+  quizId         String
+  quiz           Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score          Int
+  totalQuestions Int
+  createdAt      DateTime @default(now())
+}
+
+model StudyEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  date      DateTime
+  type      String   // e.g., "Exam", "Study Session"
+  color     String   // e.g., "#3b82f6"
+  createdAt DateTime @default(now())
 }

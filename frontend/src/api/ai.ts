@@ -8,6 +8,9 @@ export const aiApi = {
   getSummary: (noteId: string) =>
     api.get<{ data: { summary: Summary | null } }>(`/ai/notes/${noteId}/summary`),
 
+  deleteSummary: (noteId: string) =>
+    api.delete(`/ai/notes/${noteId}/summary`),
+
   generateQuiz: (noteId: string, questionCount = 5) =>
     api.post<{ data: { quizId: string; questions: Quiz['questions'] } }>(
       `/ai/notes/${noteId}/quiz`,
@@ -17,6 +20,9 @@ export const aiApi = {
   getQuizzes: (noteId: string) =>
     api.get<{ data: Quiz[] }>(`/ai/notes/${noteId}/quizzes`),
 
+  deleteQuiz: (noteId: string, quizId: string) =>
+    api.delete(`/ai/notes/${noteId}/quiz/${quizId}`),
+
   generateFlashcards: (noteId: string, cardCount = 10) =>
     api.post<{ data: { deckId: string; cards: Array<{ front: string; back: string }> } }>(
       `/ai/notes/${noteId}/flashcards`,
@@ -25,6 +31,12 @@ export const aiApi = {
 
   getFlashcardDecks: (noteId: string) =>
     api.get<{ data: FlashcardDeck[] }>(`/ai/notes/${noteId}/flashcard-decks`),
+
+  deleteFlashcardDeck: (noteId: string, deckId: string) =>
+    api.delete(`/ai/notes/${noteId}/flashcard-decks/${deckId}`),
+
+  reviewFlashcard: (flashcardId: string, quality: number) =>
+    api.post(`/ai/flashcards/${flashcardId}/review`, { quality }),
 
   createChatSession: (noteId?: string) =>
     api.post<{ data: ChatSession }>('/ai/chat/sessions', { noteId }),
@@ -37,4 +49,6 @@ export const aiApi = {
 
   sendMessage: (sessionId: string, message: string) =>
     api.post<{ data: { reply: string } }>(`/ai/chat/sessions/${sessionId}/messages`, { message }),
+
+  deleteSession: (sessionId: string) => api.delete(`/ai/chat/sessions/${sessionId}`),
 };

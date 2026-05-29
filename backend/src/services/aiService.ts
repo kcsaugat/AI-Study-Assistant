@@ -1,10 +1,12 @@
-import { genAI } from '../config/gemini';
+import { groq } from '../config/groq';
 import { prisma } from '../config/database';
 
 // Helper to check if we should mock
 function shouldMock() {
-  return !process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes('missing');
+  return !process.env.GROQ_API_KEY || process.env.GROQ_API_KEY.includes('missing') || process.env.GROQ_API_KEY.includes('your_groq_api_key_here');
 }
+
+const MODEL = "llama-3.1-8b-instant";
 
 // ── Summarize ──────────────────────────────────────────────────────────────
 
@@ -18,12 +20,14 @@ export async function summarizeNote(noteId: string, userId: string): Promise<str
     summary = `- Key concept: Understanding the core principles of this topic.\n- Main idea: ${note.title} is an essential study material.\n- Details: The notes cover various fundamental aspects that are critical for mastery.\n- Conclusion: Review this material frequently to retain knowledge.`;
   } else {
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const prompt = `You are an expert study assistant. Summarize the following study notes concisely and clearly. Use bullet points for key concepts. Keep it focused and educational.\n\nNotes:\n${note.content}`;
-      const result = await model.generateContent(prompt);
-      summary = result.response.text();
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        model: MODEL,
+      });
+      summary = chatCompletion.choices[0]?.message?.content || '';
     } catch (error) {
-      console.warn("Gemini summarize error, using fallback mock:", error);
+      console.warn("Groq summarize error, using fallback mock:", error);
       summary = `- Key concept: Understanding the core principles of this topic.\n- Main idea: ${note.title} is an essential study material.\n- Details: The notes cover various fundamental aspects that are critical for mastery.\n- Conclusion: Review this material frequently to retain knowledge.`;
     }
   }
@@ -35,6 +39,10 @@ export async function summarizeNote(noteId: string, userId: string): Promise<str
     update: { content: summary },
   });
 
+  await prisma.activityLog.create({
+    data: { userId, action: 'SUMMARY_GENERATED' }
+  });
+
   return summary;
 }
 
@@ -42,6 +50,13 @@ export async function getSummary(noteId: string, userId: string) {
   const note = await prisma.note.findFirst({ where: { id: noteId, userId } });
   if (!note) throw Object.assign(new Error('Note not found'), { statusCode: 404 });
   return prisma.summary.findUnique({ where: { noteId } });
+}
+
+export async function deleteSummary(noteId: string, userId: string) {
+  const note = await prisma.note.findFirst({ where: { id: noteId, userId } });
+  if (!note) throw Object.assign(new Error('Note not found'), { statusCode: 404 });
+  
+  await prisma.summary.delete({ where: { noteId } });
 }
 
 // ── Quiz ───────────────────────────────────────────────────────────────────
@@ -64,7 +79,6 @@ export async function generateQuiz(
   let questions: QuizQuestion[] = [];
 
   if (shouldMock()) {
-    // Mock Response
     for (let i = 0; i < questionCount; i++) {
       questions.push({
         question: `What is a key takeaway from "${note.title}" (Mock Question ${i + 1})?`,
@@ -75,32 +89,32 @@ export async function generateQuiz(
     }
   } else {
     try {
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
-        generationConfig: { responseMimeType: "application/json" }
-      });
-      
       const prompt = `You are a quiz generator. Generate exactly ${questionCount} multiple-choice questions from the provided study notes. 
-Return ONLY a valid JSON array with this exact format:
-[
-  {
-    "question": "question text",
-    "options": ["option A", "option B", "option C", "option D"],
-    "correctAnswer": 0,
-    "explanation": "brief explanation"
-  }
-]
+Return ONLY a valid JSON object with a single key "questions" containing an array in this exact format:
+{
+  "questions": [
+    {
+      "question": "question text",
+      "options": ["option A", "option B", "option C", "option D"],
+      "correctAnswer": 0,
+      "explanation": "brief explanation"
+    }
+  ]
+}
 correctAnswer is the zero-based index of the correct option.
 Notes:
 ${note.content}`;
 
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        model: MODEL,
+        response_format: { type: "json_object" },
+      });
+      const text = chatCompletion.choices[0]?.message?.content || '{}';
       const parsed = JSON.parse(text);
-      questions = parsed.questions ?? parsed;
-      if (!Array.isArray(questions)) throw new Error('Not an array');
+      questions = parsed.questions || [];
     } catch (error) {
-      console.warn("Gemini quiz error, using fallback mock:", error);
+      console.warn("Groq quiz error, using fallback mock:", error);
       for (let i = 0; i < questionCount; i++) {
         questions.push({
           question: `What is a key takeaway from "${note.title}" (Mock Question ${i + 1})?`,
@@ -128,6 +142,10 @@ ${note.content}`;
     include: { questions: true },
   });
 
+  await prisma.activityLog.create({
+    data: { userId, action: 'QUIZ_TAKEN' }
+  });
+
   return {
     quizId: quiz.id,
     questions: quiz.questions.map((q) => ({
@@ -150,6 +168,15 @@ export async function getQuizzesForNote(noteId: string, userId: string) {
   });
 }
 
+export async function deleteQuiz(quizId: string, userId: string) {
+  const quiz = await prisma.quiz.findFirst({ 
+    where: { id: quizId, note: { userId } } 
+  });
+  if (!quiz) throw Object.assign(new Error('Quiz not found'), { statusCode: 404 });
+
+  await prisma.quiz.delete({ where: { id: quizId } });
+}
+
 // ── Flashcards ─────────────────────────────────────────────────────────────
 
 export interface FlashcardItem {
@@ -168,7 +195,6 @@ export async function generateFlashcards(
   let cards: FlashcardItem[] = [];
 
   if (shouldMock()) {
-    // Mock response
     for (let i = 0; i < cardCount; i++) {
       cards.push({
         front: `Mock Term ${i + 1} from ${note.title}`,
@@ -177,26 +203,26 @@ export async function generateFlashcards(
     }
   } else {
     try {
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
-        generationConfig: { responseMimeType: "application/json" }
-      });
-      
       const prompt = `You are a flashcard generator. Create exactly ${cardCount} study flashcards from the provided notes.
 Return ONLY valid JSON in this format:
-[
-  { "front": "term or question", "back": "definition or answer" }
-]
+{
+  "flashcards": [
+    { "front": "term or question", "back": "definition or answer" }
+  ]
+}
 Notes:
 ${note.content}`;
 
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        model: MODEL,
+        response_format: { type: "json_object" },
+      });
+      const text = chatCompletion.choices[0]?.message?.content || '{}';
       const parsed = JSON.parse(text);
-      cards = parsed.flashcards ?? parsed;
-      if (!Array.isArray(cards)) throw new Error('Not an array');
+      cards = parsed.flashcards || [];
     } catch (error) {
-      console.warn("Gemini flashcard error, using fallback mock:", error);
+      console.warn("Groq flashcard error, using fallback mock:", error);
       for (let i = 0; i < cardCount; i++) {
         cards.push({
           front: `Mock Term ${i + 1} from ${note.title}`,
@@ -217,6 +243,10 @@ ${note.content}`;
     include: { flashcards: true },
   });
 
+  await prisma.activityLog.create({
+    data: { userId, action: 'FLASHCARD_GENERATED' }
+  });
+
   return {
     deckId: deck.id,
     cards: deck.flashcards.map((c) => ({ front: c.front, back: c.back })),
@@ -232,6 +262,91 @@ export async function getFlashcardsForNote(noteId: string, userId: string) {
     orderBy: { createdAt: 'desc' },
     include: { flashcards: true },
   });
+}
+
+export async function deleteFlashcardDeck(deckId: string, userId: string) {
+  const deck = await prisma.flashcardDeck.findFirst({ 
+    where: { id: deckId, note: { userId } } 
+  });
+  if (!deck) throw Object.assign(new Error('Flashcard deck not found'), { statusCode: 404 });
+
+  await prisma.flashcardDeck.delete({ where: { id: deckId } });
+}
+
+export async function reviewFlashcard(flashcardId: string, userId: string, quality: number) {
+  // quality: 0 (blackout), 1 (wrong), 2 (hard), 3 (good), 4 (easy)
+  const card = await prisma.flashcard.findUnique({ where: { id: flashcardId } });
+  if (!card) throw Object.assign(new Error('Flashcard not found'), { statusCode: 404 });
+
+  let { interval, easeFactor, repetitions } = card;
+
+  if (quality < 2) {
+    repetitions = 0;
+    interval = 1;
+  } else {
+    if (repetitions === 0) {
+      interval = 1;
+    } else if (repetitions === 1) {
+      interval = 6;
+    } else {
+      interval = Math.round(interval * easeFactor);
+    }
+    repetitions += 1;
+  }
+
+  easeFactor = easeFactor + (0.1 - (4 - quality) * (0.08 + (4 - quality) * 0.02));
+  if (easeFactor < 1.3) easeFactor = 1.3;
+
+  const nextReview = new Date();
+  nextReview.setDate(nextReview.getDate() + interval);
+
+  return prisma.flashcard.update({
+    where: { id: flashcardId },
+    data: {
+      interval,
+      easeFactor,
+      repetitions,
+      nextReview,
+    }
+  });
+}
+
+// ── Magic Generate ───────────────────────────────────────────────────────────
+
+export async function magicGenerate(
+  userId: string,
+  topic: string,
+  type: 'quiz' | 'flashcards'
+): Promise<{ noteId: string }> {
+  let noteContent = '';
+
+  if (shouldMock()) {
+    noteContent = `This is a magically generated mock note for the topic: ${topic}. Since no API key is provided, this mock content is used. It covers all the essential concepts of ${topic}.`;
+  } else {
+    try {
+      const prompt = `You are an expert study assistant. Generate a comprehensive and educational study note about the following topic: "${topic}". The note should be well-structured with headings and bullet points.`;
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        model: MODEL,
+      });
+      noteContent = chatCompletion.choices[0]?.message?.content || '';
+    } catch (error) {
+      console.warn("Groq magic generate error, using fallback mock:", error);
+      noteContent = `This is a magically generated fallback mock note for the topic: ${topic}. The AI service is currently unavailable.`;
+    }
+  }
+
+  const note = await prisma.note.create({
+    data: { userId, title: topic, content: noteContent },
+  });
+
+  if (type === 'quiz') {
+    await generateQuiz(note.id, userId, 5);
+  } else if (type === 'flashcards') {
+    await generateFlashcards(note.id, userId, 10);
+  }
+
+  return { noteId: note.id };
 }
 
 // ── Chat Tutor ─────────────────────────────────────────────────────────────
@@ -266,7 +381,6 @@ export async function sendChatMessage(
   });
   if (!session) throw Object.assign(new Error('Session not found'), { statusCode: 404 });
 
-  // Save user message first
   await prisma.chatMessage.create({
     data: { sessionId, role: 'user', content: userMessage },
   });
@@ -274,31 +388,33 @@ export async function sendChatMessage(
   let assistantMessage = '';
 
   if (shouldMock()) {
-    // Mock response
     assistantMessage = `(Mock AI Response) You said: "${userMessage}". Since there is no valid API key configured, I am replying with this placeholder text. Please add a valid API key to enable real AI responses.`;
   } else {
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      
       const systemPrompt = session.note
         ? `You are a helpful AI study tutor. The student is studying the following material:\n\n${session.note.content}\n\nAnswer questions based on this material. Be clear, encouraging, and educational.`
         : 'You are a helpful AI study tutor. Help students understand their study material. Be clear, encouraging, and educational.';
 
-      const chat = model.startChat({
-        history: [
-          { role: "user", parts: [{ text: systemPrompt }] },
-          { role: "model", parts: [{ text: "Understood! I will act as a helpful AI study tutor." }] },
-          ...session.messages.map(m => ({
-            role: m.role === 'user' ? 'user' : 'model',
-            parts: [{ text: m.content }]
-          }))
-        ]
-      });
+      const formattedMessages: { role: 'system' | 'user' | 'assistant', content: string }[] = [
+        { role: 'system', content: systemPrompt },
+      ];
 
-      const result = await chat.sendMessage(userMessage);
-      assistantMessage = result.response.text();
+      session.messages.forEach(m => {
+        formattedMessages.push({
+          role: m.role === 'user' ? 'user' : 'assistant',
+          content: m.content
+        });
+      });
+      
+      formattedMessages.push({ role: 'user', content: userMessage });
+
+      const chatCompletion = await groq.chat.completions.create({
+        messages: formattedMessages,
+        model: MODEL,
+      });
+      assistantMessage = chatCompletion.choices[0]?.message?.content || '';
     } catch (error) {
-      console.warn("Gemini chat error, using fallback mock:", error);
+      console.warn("Groq chat error, using fallback mock:", error);
       assistantMessage = `(Mock AI Response) You said: "${userMessage}". The AI service is currently unavailable or your API key is invalid, so I am replying with this placeholder text.`;
     }
   }
@@ -329,3 +445,84 @@ export async function getChatMessages(sessionId: string, userId: string) {
     orderBy: { createdAt: 'asc' },
   });
 }
+
+export async function deleteChatSession(sessionId: string, userId: string) {
+  const session = await prisma.chatSession.findFirst({ where: { id: sessionId, userId } });
+  if (!session) throw Object.assign(new Error('Session not found'), { statusCode: 404 });
+  
+  return prisma.chatSession.delete({
+    where: { id: sessionId },
+  });
+}
+
+// ── Quizzes Hub ────────────────────────────────────────────────────────────
+
+export async function getAllQuizzes(userId: string) {
+  return prisma.quiz.findMany({
+    where: { note: { userId } },
+    orderBy: { createdAt: 'desc' },
+    include: { 
+      note: { select: { title: true } },
+      questions: true,
+      attempts: {
+        where: { userId },
+        orderBy: { createdAt: 'desc' }
+      }
+    },
+  });
+}
+
+export async function submitQuizAttempt(userId: string, quizId: string, score: number, totalQuestions: number) {
+  const quiz = await prisma.quiz.findFirst({ where: { id: quizId, note: { userId } } });
+  if (!quiz) throw Object.assign(new Error('Quiz not found'), { statusCode: 404 });
+
+  return prisma.quizAttempt.create({
+    data: {
+      userId,
+      quizId,
+      score,
+      totalQuestions
+    }
+  });
+}
+
+// ── Flashcards Hub ─────────────────────────────────────────────────────────
+
+export async function getAllFlashcardDecks(userId: string) {
+  return prisma.flashcardDeck.findMany({
+    where: { note: { userId } },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      note: { select: { title: true } },
+      flashcards: true
+    }
+  });
+}
+
+// ── Planner Hub ────────────────────────────────────────────────────────────
+
+export async function getPlannerEvents(userId: string) {
+  return prisma.studyEvent.findMany({
+    where: { userId },
+    orderBy: { date: 'asc' }
+  });
+}
+
+export async function createPlannerEvent(userId: string, title: string, date: Date, type: string, color: string) {
+  return prisma.studyEvent.create({
+    data: {
+      userId,
+      title,
+      date,
+      type,
+      color
+    }
+  });
+}
+
+export async function deletePlannerEvent(userId: string, eventId: string) {
+  const event = await prisma.studyEvent.findFirst({ where: { id: eventId, userId } });
+  if (!event) throw Object.assign(new Error('Event not found'), { statusCode: 404 });
+  return prisma.studyEvent.delete({ where: { id: eventId } });
+}
+

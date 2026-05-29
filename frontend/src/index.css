@@ -14,16 +14,87 @@
   }
 
   body {
-    background-color: #f8fafc;
-    background-image: radial-gradient(circle at top right, rgba(148, 163, 184, 0.15), transparent 40%), radial-gradient(circle at bottom left, rgba(100, 116, 139, 0.1), transparent 40%);
-    color: #0f172a;
+    background: linear-gradient(135deg, #7dd3fc, #a78bfa, #67e8f9, #c4b5fd, #818cf8); /* Soft Sky Blue, Soft Violet, Soft Cyan, Soft Lavender, Soft Indigo */
+    background-size: 400% 400%;
+    animation: gradientSweep 35s ease-in-out infinite;
+    color: #1e293b; /* Dark text */
     margin: 0;
     padding: 0;
   }
+  
+  @keyframes gradientSweep {
+    0% { background-position: 100% 50%; } 
+    35% { background-position: 0% 50%; }
+    50% { background-position: 50% 100%; }
+    85% { background-position: 50% 0%; }
+    100% { background-position: 100% 50%; } 
+  }
+  
   .dark body {
-    background-color: #020617;
-    background-image: radial-gradient(circle at top right, rgba(51, 65, 85, 0.4), transparent 40%), radial-gradient(circle at bottom left, rgba(30, 41, 59, 0.3), transparent 40%);
+    background-color: #0B0C10; /* Deep cosmic dark */
+    background-image: none;
     color: #f8fafc;
+  }
+
+
+  /* 3D Glassmorphism Button / Card */
+  .glass-3d-btn {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+  .glass-3d-btn:hover {
+    transform: translateY(-8px) scale(1.03) perspective(1000px) rotateX(2deg) rotateY(-2deg);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2), inset 0 0 15px rgba(255,255,255,0.8);
+  }
+
+  /* Glass Bottle Container */
+  .glass-bottle {
+    position: relative;
+    padding: 12px 40px;
+    border-radius: 50px 50px 10px 10px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(12px);
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.5), 0 15px 30px rgba(0, 0, 0, 0.2);
+    overflow: visible;
+  }
+  
+  /* Running Water from Bottle */
+  .running-water {
+    position: absolute;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 120px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.8), rgba(255,255,255,0.2), transparent);
+    border-radius: 50px;
+    animation: pourWater 1.5s infinite linear;
+    z-index: -1;
+  }
+  @keyframes pourWater {
+    0% { transform: translateX(-50%) translateY(-20px); opacity: 0; height: 0; }
+    20% { opacity: 1; }
+    80% { height: 120px; opacity: 1; }
+    100% { transform: translateX(-50%) translateY(50px); opacity: 0; height: 120px; }
+  }
+
+  /* Make sure AppLayout's background doesn't hide the body background in light mode */
+  html:not(.dark) .bg-gray-50 {
+    background-color: transparent !important;
+  }
+  html:not(.dark) .bg-white\/40 {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  /* Global Overrides for Light Mode Text - Make it Dark, Bold, and Clearly Visible */
+  html:not(.dark) .text-gray-900, html:not(.dark) .text-slate-900, html:not(.dark) .text-white, html:not(.dark) .text-slate-200 {
+    color: #0f172a !important;
+    font-weight: 800 !important;
+  }
+  html:not(.dark) .text-gray-500, html:not(.dark) .text-gray-600, html:not(.dark) .text-slate-500, html:not(.dark) .text-slate-600 {
+    color: #334155 !important;
+    font-weight: 700 !important;
   }
 
   body {
@@ -31,32 +102,158 @@
     overflow-x: hidden;
   }
 
-  body::before,
-  body::after {
+  /* --- Light Mode Crazy Animated Blobs (6-Color Aurora) --- */
+  html:not(.dark)::before {
+    content: '';
+    position: fixed;
+    width: 850px;
+    height: 850px;
+    top: 50%;
+    right: -20%;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.25), transparent 60%); /* Vibrant Pink */
+    filter: blur(100px);
+    z-index: -2;
+    pointer-events: none;
+    animation: liquidFloat6 35s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate-reverse;
+  }
+
+  body::before, body::after {
     content: '';
     position: fixed;
     pointer-events: none;
     z-index: -1;
-    filter: blur(100px);
-    opacity: 0.7;
+    filter: blur(90px);
+    opacity: 0.9;
+    border-radius: 50%;
   }
 
-  body::before {
-    width: 600px;
-    height: 600px;
-    top: -200px;
+  body::before { /* Color 1: Violet */
+    width: 800px;
+    height: 800px;
+    top: -100px;
     left: -200px;
-    background: radial-gradient(circle, rgba(148, 163, 184, 0.15), transparent 60%);
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.25), transparent 60%); /* Violet */
+    animation: liquidFloat1 25s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  }
+
+  body::after { /* Color 2: Cyan */
+    width: 900px;
+    height: 900px;
+    bottom: -200px;
+    right: -100px;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.25), transparent 60%); /* Sky Blue */
+    animation: liquidFloat2 28s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate-reverse;
+  }
+}
+
+@layer components {
+  
+  @keyframes liquidFloat1 {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(300px, 150px) scale(1.1); }
+    66% { transform: translate(150px, 300px) scale(0.9); }
+    100% { transform: translate(-50px, 100px) scale(1); }
+  }
+  
+  @keyframes liquidFloat2 {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-300px, -200px) scale(1.2); }
+    66% { transform: translate(-100px, -350px) scale(0.8); }
+    100% { transform: translate(50px, -150px) scale(1); }
+  }
+
+  /* Dark Mode Background Animations */
+  .dark body::before, .dark body::after {
+    opacity: 0.4;
+    filter: blur(120px);
+  }
+  
+  .dark body::before {
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.3), transparent 70%); /* Subtle Indigo */
     animation: float 15s ease-in-out infinite alternate;
   }
 
-  body::after {
-    width: 500px;
-    height: 500px;
-    bottom: -200px;
-    right: -200px;
-    background: radial-gradient(circle, rgba(71, 85, 105, 0.15), transparent 60%);
+  .dark body::after {
+    background: radial-gradient(circle, rgba(79, 70, 229, 0.2), transparent 70%); /* Subtle Indigo (Replaced Emerald) */
     animation: float 18s ease-in-out infinite alternate-reverse;
+  }
+
+  /* 3D Aurora Background Element - Light Mode (Colors 3, 4 & 5: Deep Teal, Turquoise, Amber) */
+  html:not(.dark) .aurora-blob {
+    position: fixed;
+    width: 800px;
+    height: 800px;
+    top: 20%;
+    left: 60%;
+    background: radial-gradient(circle, rgba(147, 51, 234, 0.45), transparent 60%); /* Smooth Purple (Replaced Teal) */
+    filter: blur(100px);
+    z-index: -2;
+    pointer-events: none;
+    animation: liquidFloat3 30s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  }
+
+  html:not(.dark) .aurora-blob::after {
+    content: '';
+    position: absolute;
+    width: 850px;
+    height: 850px;
+    top: 50%;
+    left: -80%;
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.45), transparent 60%); /* Turquoise/Cyan */
+    animation: liquidFloat4 26s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate-reverse;
+  }
+
+  html:not(.dark) .aurora-blob::before {
+    content: '';
+    position: absolute;
+    width: 750px;
+    height: 750px;
+    top: -40%;
+    left: -20%;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.35), transparent 60%); /* Warm Amber */
+    animation: liquidFloat5 32s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  }
+
+  @keyframes liquidFloat3 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-400px, 200px) scale(1.1); }
+    100% { transform: translate(-200px, 400px) scale(0.9); }
+  }
+
+  @keyframes liquidFloat4 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(300px, -200px) scale(1.1); }
+    100% { transform: translate(500px, 100px) scale(0.9); }
+  }
+
+  @keyframes liquidFloat5 {
+    0% { transform: translate(0, 0) scale(0.9); }
+    50% { transform: translate(200px, 300px) scale(1.1); }
+    100% { transform: translate(-100px, 200px) scale(1); }
+  }
+
+  @keyframes liquidFloat6 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-300px, -300px) scale(1.2); }
+    100% { transform: translate(-600px, 100px) scale(0.9); }
+  }
+
+  .dark .aurora-blob {
+    position: fixed;
+    width: 1000px;
+    height: 1000px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.45), transparent 60%); /* Vibrant Yellow/Gold */
+    filter: blur(120px);
+    z-index: -2;
+    pointer-events: none;
+    animation: pulseGlow 6s ease-in-out infinite alternate;
+  }
+  
+  .dark .aurora-blob::after {
+    display: none;
   }
 
   .floating-glow {
@@ -64,19 +261,86 @@
     transform-style: preserve-3d;
   }
 
-  .glow-button {
-    background-image: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.0));
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+  /* Animated Water Droplets for Dashboard Title */
+  .water-droplet {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+    box-shadow: 
+      inset 10px 10px 20px rgba(255, 255, 255, 0.2),
+      inset -10px -10px 20px rgba(0, 0, 0, 0.1),
+      0 10px 20px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: morphDroplet 5s ease-in-out infinite alternate, floatDroplet 7s ease-in-out infinite;
+    z-index: 0;
+  }
+  
+  .dark .water-droplet {
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 
+      inset 10px 10px 20px rgba(255, 255, 255, 0.1),
+      inset -10px -10px 20px rgba(0, 0, 0, 0.3),
+      0 10px 20px rgba(0, 0, 0, 0.3);
   }
 
-  .neon-card {
-    background: rgba(255, 255, 255, 0.03);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  @keyframes morphDroplet {
+    0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+    34% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; }
+    67% { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; }
+    100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+  }
+
+  @keyframes floatDroplet {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(10deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+  }
+
+  .glow-button {
+    background-image: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.0));
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
+
+  /* True 3D Glassmorphism - Light Mode (Frosted White Glass) */
+  html:not(.dark) .neon-card {
+    background: rgba(255, 255, 255, 0.7) !important; /* Thick bright frost */
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1), inset 0 2px 5px rgba(255,255,255,1), inset 0 0 30px rgba(255,255,255,0.4);
+    backdrop-filter: blur(30px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(200%) !important;
+    border: 1px solid rgba(255,255,255,0.8) !important;
+  }
+
+  /* Original Dark Mode Theme */
+  .dark .neon-card {
+    background: rgba(255, 255, 255, 0.03) !important;
+    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 0 20px rgba(255,255,255,0.02) !important;
+    backdrop-filter: blur(24px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+  }
+
+  .sci-fi-delete-btn {
+    background: rgba(239, 68, 68, 0.15); /* Red glass */
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.2), inset 0 0 10px rgba(239, 68, 68, 0.2);
+    transform-style: preserve-3d;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    color: rgba(252, 165, 165, 1);
+  }
+  
+  .sci-fi-delete-btn:hover {
+    transform: translateY(-2px) scale(1.1) rotateX(10deg) rotateY(-10deg);
+    background: rgba(239, 68, 68, 0.3);
+    border: 1px solid rgba(239, 68, 68, 0.8);
+    box-shadow: 0 10px 25px rgba(239, 68, 68, 0.5), inset 0 0 20px rgba(239, 68, 68, 0.6);
+    color: white;
+  }
+
 
   @keyframes float {
     0%, 100% { transform: translate3d(0, 0, 0); }
@@ -112,5 +376,87 @@
 @layer utilities {
   .prose-sm p {
     @apply text-sm leading-relaxed;
+  }
+
+  .text-3d-bridge {
+    color: #1e293b; /* Very dark slate, almost black */
+    -webkit-text-stroke: 1px #334155; /* Subtle dark border, no white lines */
+    text-shadow: 
+      0 1px 0 #0f172a,
+      0 2px 0 #020617,
+      0 3px 0 #000000,
+      0 4px 0 #000000,
+      0 8px 15px rgba(0, 0, 0, 0.4),
+      0 15px 25px rgba(0, 0, 0, 0.3);
+  }
+  
+  .dark .text-3d-bridge {
+    color: #0f172a; /* Pitch black */
+    -webkit-text-stroke: 1px #1e293b;
+    text-shadow: 
+      0 1px 0 #000000,
+      0 2px 0 #000000,
+      0 3px 0 #000000,
+      0 4px 0 #000000,
+      0 8px 15px rgba(0, 0, 0, 0.6),
+      0 15px 25px rgba(0, 0, 0, 0.5);
+  }
+
+  .text-3d-scifi {
+    color: transparent;
+    background: linear-gradient(110deg, #020617 0%, #1e293b 30%, #475569 50%, #1e293b 70%, #020617 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: shineText 3s linear infinite;
+    text-shadow: 
+      0 1px 0 #1e293b,
+      0 2px 0 #0f172a,
+      0 3px 0 #0f172a,
+      0 4px 0 #020617,
+      0 5px 0 #000000,
+      0 10px 15px rgba(0, 0, 0, 0.6),
+      0 0 10px rgba(56, 189, 248, 0.3); /* sci-fi cyan glow */
+    -webkit-text-stroke: 1px rgba(56, 189, 248, 0.5);
+  }
+  
+  .dark .text-3d-scifi {
+    background: linear-gradient(110deg, #000000 0%, #0f172a 30%, #334155 50%, #0f172a 70%, #000000 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 
+      0 1px 0 #1e293b,
+      0 2px 0 #0f172a,
+      0 3px 0 #020617,
+      0 4px 0 #000000,
+      0 5px 0 #000000,
+      0 10px 25px rgba(56, 189, 248, 0.2),
+      0 15px 35px rgba(0, 0, 0, 0.9),
+      0 0 15px rgba(56, 189, 248, 0.5); /* stronger sci-fi cyan glow */
+    -webkit-text-stroke: 1px rgba(56, 189, 248, 0.8);
+  }
+
+  @keyframes shineText {
+    0% { background-position: 200% center; }
+    100% { background-position: -200% center; }
+  }
+
+  @media print {
+    body {
+      background: white !important;
+      color: black !important;
+    }
+    #tsparticles, .aurora-blob, nav, aside, .sticky, button {
+      display: none !important;
+    }
+    main {
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: visible !important;
+    }
+    .prose {
+      max-width: 100% !important;
+    }
   }
 }
