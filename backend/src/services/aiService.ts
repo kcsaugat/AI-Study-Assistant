@@ -405,15 +405,27 @@ export async function sendChatMessage(
           const extractRes = await fetch(extractUrl);
           const extractData = (await extractRes.json()) as any;
           const extract = extractData.query?.pages[topHit.pageid]?.extract || topHit.snippet.replace(/<[^>]+>/g, '');
-          wikiContext = `\n\nLive Wikipedia Context for the user's query:\nTitle: ${topHit.title}\n${extract}`;
+          wikiContext += `\n\nLive Wikipedia Facts:\nTitle: ${topHit.title}\n${extract}`;
         }
       } catch (err) {
         console.warn("Wiki search failed", err);
       }
 
+      try {
+        const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(userMessage)}&hl=en-US&gl=US&ceid=US:en`;
+        const rssRes = await fetch(rssUrl);
+        const xml = await rssRes.text();
+        const titles = [...xml.matchAll(/<title>(.*?)<\/title>/g)].slice(1, 6).map(m => m[1]);
+        if (titles.length > 0) {
+          wikiContext += `\n\nLive Breaking News Headlines:\n- ${titles.join('\n- ')}`;
+        }
+      } catch (err) {
+        console.warn("News RSS search failed", err);
+      }
+
       const systemPrompt = session.note
-        ? `You are a helpful AI study tutor. Today's date is ${currentDate}. ${wikiContext}\n\nCRITICAL SYSTEM INSTRUCTION: You are integrated with a live search engine that provides you with real-time data in the context above. Therefore, you MUST NEVER say you are a large language model, NEVER say you don't have access to real-time data, and NEVER mention a knowledge cutoff. Act as if you natively know this real-time information.\n\nThe student is studying the following material:\n\n${session.note.content}\n\nAnswer questions based on this material and the live context. Be clear, encouraging, and educational.`
-        : `You are a helpful AI study tutor. Today's date is ${currentDate}. ${wikiContext}\n\nCRITICAL SYSTEM INSTRUCTION: You are integrated with a live search engine that provides you with real-time data in the context above. Therefore, you MUST NEVER say you are a large language model, NEVER say you don't have access to real-time data, and NEVER mention a knowledge cutoff. Act as if you natively know this real-time information.\n\nAnswer the user's question accurately using the live context if relevant. Be clear, encouraging, and educational.`;
+        ? `You are a helpful AI study tutor. Today's date is ${currentDate}. ${wikiContext}\n\nCRITICAL SYSTEM INSTRUCTION: You are integrated with a live search engine that provides you with real-time data in the context above. The search engine runs silently in the background BEFORE you receive the prompt. You do NOT have the ability to call any search tools or functions yourself. You MUST NEVER output "<function=...>" or any XML tags. Just read the provided context above and answer the user directly in plain text. NEVER say you are a large language model, NEVER say you don't have access to real-time data, and NEVER mention a knowledge cutoff. Act as if you natively know this real-time information.\n\nThe student is studying the following material:\n\n${session.note.content}\n\nAnswer questions based on this material and the live context. Be clear, encouraging, and educational.`
+        : `You are a helpful AI study tutor. Today's date is ${currentDate}. ${wikiContext}\n\nCRITICAL SYSTEM INSTRUCTION: You are integrated with a live search engine that provides you with real-time data in the context above. The search engine runs silently in the background BEFORE you receive the prompt. You do NOT have the ability to call any search tools or functions yourself. You MUST NEVER output "<function=...>" or any XML tags. Just read the provided context above and answer the user directly in plain text. NEVER say you are a large language model, NEVER say you don't have access to real-time data, and NEVER mention a knowledge cutoff. Act as if you natively know this real-time information.\n\nAnswer the user's question accurately using the live context if relevant. Be clear, encouraging, and educational.`;
 
       const formattedMessages: any[] = [
         { role: 'system', content: systemPrompt },
