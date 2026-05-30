@@ -424,8 +424,8 @@ export async function sendChatMessage(
         const html = await res.text();
         const $ = cheerio.load(html);
         
-        let ddgResults = [];
-        $('.result').each((i, el) => {
+        let ddgResults: string[] = [];
+        $('.result').each((i: number, el: any) => {
           if (i >= 3) return false;
           const title = $(el).find('.result__title').text().trim();
           const snippet = $(el).find('.result__snippet').text().trim();
