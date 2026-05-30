@@ -412,15 +412,33 @@ export async function sendChatMessage(
       }
 
       try {
-        const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(userMessage)}&hl=en-US&gl=US&ceid=US:en`;
-        const rssRes = await fetch(rssUrl);
-        const xml = await rssRes.text();
-        const titles = [...xml.matchAll(/<title>(.*?)<\/title>/g)].slice(1, 6).map(m => m[1]);
-        if (titles.length > 0) {
-          wikiContext += `\n\nLive Breaking News Headlines:\n- ${titles.join('\n- ')}`;
+        const cheerio = require('cheerio');
+        const res = await fetch('https://html.duckduckgo.com/html/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+          },
+          body: new URLSearchParams({ q: userMessage })
+        });
+        const html = await res.text();
+        const $ = cheerio.load(html);
+        
+        let ddgResults = [];
+        $('.result').each((i, el) => {
+          if (i >= 3) return false;
+          const title = $(el).find('.result__title').text().trim();
+          const snippet = $(el).find('.result__snippet').text().trim();
+          if (title && snippet) {
+            ddgResults.push(`Search Result: ${title} - ${snippet}`);
+          }
+        });
+        
+        if (ddgResults.length > 0) {
+          wikiContext += `\n\nLive Web Search Results:\n${ddgResults.join('\n')}`;
         }
       } catch (err) {
-        console.warn("News RSS search failed", err);
+        console.warn("Web search failed", err);
       }
 
       const systemPrompt = session.note
