@@ -1,6 +1,8 @@
 import { groq } from '../config/groq';
 import { prisma } from '../config/database';
 
+declare const fetch: any;
+
 function getAiProvider(): 'gemini' | 'groq' | 'openai' | 'mock' {
   if (process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY.includes('key-here') && !process.env.GEMINI_API_KEY.includes('your_gemini')) {
     return 'gemini';
