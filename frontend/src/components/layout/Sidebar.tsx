@@ -147,11 +147,16 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-all duration-150"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-all duration-150 mb-3"
           >
             <LogOut className="w-4.5 h-4.5" size={18} />
             Sign out
           </button>
+          <div className="text-center pt-1">
+            <p className="text-[10px] tracking-wider uppercase text-gray-400 dark:text-gray-600 font-bold select-none">
+              Developed by Saugat
+            </p>
+          </div>
         </div>
       </motion.aside>
     </>

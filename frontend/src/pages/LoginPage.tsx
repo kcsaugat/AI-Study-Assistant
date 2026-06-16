@@ -137,6 +137,11 @@ export function LoginPage() {
               Create one
             </Link>
           </p>
+          <div className="mt-6 text-center">
+            <span className="text-[10px] tracking-wider uppercase text-gray-500 font-bold select-none">
+              Developed by Saugat
+            </span>
+          </div>
         </motion.div>
       </div>
     </div>
