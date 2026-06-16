@@ -1,12 +1,223 @@
 import { groq } from '../config/groq';
 import { prisma } from '../config/database';
 
-// Helper to check if we should mock
-function shouldMock() {
-  return !process.env.GROQ_API_KEY || process.env.GROQ_API_KEY.includes('missing') || process.env.GROQ_API_KEY.includes('your_groq_api_key_here');
+function getAiProvider(): 'gemini' | 'groq' | 'openai' | 'mock' {
+  if (process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY.includes('key-here') && !process.env.GEMINI_API_KEY.includes('your_gemini')) {
+    return 'gemini';
+  }
+  if (process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes('key-here') && !process.env.GROQ_API_KEY.includes('your_groq')) {
+    return 'groq';
+  }
+  if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes('key-here') && !process.env.OPENAI_API_KEY.includes('your_openai') && !process.env.OPENAI_API_KEY.includes('sk-...')) {
+    return 'openai';
+  }
+  return 'mock';
 }
 
-const MODEL = "llama-3.1-8b-instant";
+function shouldMock() {
+  return getAiProvider() === 'mock';
+}
+
+interface CallAiOptions {
+  systemPrompt?: string;
+  jsonMode?: boolean;
+}
+
+interface ChatMessageInput {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+async function callAi(prompt: string, options?: CallAiOptions): Promise<string> {
+  const provider = getAiProvider();
+
+  if (provider === 'gemini') {
+    const apiKey = process.env.GEMINI_API_KEY;
+    const modelName = "gemini-2.5-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+    const requestBody: any = {
+      contents: [
+        {
+          parts: [
+            { text: (options?.systemPrompt ? `${options.systemPrompt}\n\n` : '') + prompt }
+          ]
+        }
+      ]
+    };
+
+    if (options?.jsonMode) {
+      requestBody.generationConfig = {
+        responseMimeType: "application/json"
+      };
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Gemini API error: ${res.status} ${errText}`);
+    }
+
+    const data = (await res.json()) as any;
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error("Empty response from Gemini");
+    return text;
+  }
+
+  if (provider === 'openai') {
+    const apiKey = process.env.OPENAI_API_KEY;
+    const url = 'https://api.openai.com/v1/chat/completions';
+
+    const messages: any[] = [];
+    if (options?.systemPrompt) {
+      messages.push({ role: 'system', content: options.systemPrompt });
+    }
+    messages.push({ role: 'user', content: prompt });
+
+    const requestBody: any = {
+      model: 'gpt-4o-mini',
+      messages,
+    };
+
+    if (options?.jsonMode) {
+      requestBody.response_format = { type: 'json_object' };
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`OpenAI API error: ${res.status} ${errText}`);
+    }
+
+    const data = (await res.json()) as any;
+    const text = data.choices?.[0]?.message?.content;
+    if (!text) throw new Error("Empty response from OpenAI");
+    return text;
+  }
+
+  if (provider === 'groq') {
+    const messages: any[] = [];
+    if (options?.systemPrompt) {
+      messages.push({ role: 'system', content: options.systemPrompt });
+    }
+    messages.push({ role: 'user', content: prompt });
+
+    const params: any = {
+      messages,
+      model: 'llama-3.3-70b-versatile',
+    };
+
+    if (options?.jsonMode) {
+      params.response_format = { type: 'json_object' };
+    }
+
+    const completion = await groq.chat.completions.create(params);
+    const text = completion.choices[0]?.message?.content;
+    if (!text) throw new Error("Empty response from Groq");
+    return text;
+  }
+
+  throw new Error("No AI provider available");
+}
+
+async function callAiChat(messages: ChatMessageInput[]): Promise<string> {
+  const provider = getAiProvider();
+
+  if (provider === 'gemini') {
+    const apiKey = process.env.GEMINI_API_KEY;
+    const modelName = "gemini-2.5-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+    const contents: any[] = [];
+    let systemInstruction: any = undefined;
+
+    for (const msg of messages) {
+      if (msg.role === 'system') {
+        systemInstruction = {
+          parts: [{ text: msg.content }]
+        };
+      } else {
+        contents.push({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }]
+        });
+      }
+    }
+
+    const requestBody: any = { contents };
+    if (systemInstruction) {
+      requestBody.systemInstruction = systemInstruction;
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Gemini API error: ${res.status} ${errText}`);
+    }
+
+    const data = (await res.json()) as any;
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error("Empty response from Gemini");
+    return text;
+  }
+
+  if (provider === 'openai') {
+    const apiKey = process.env.OPENAI_API_KEY;
+    const url = 'https://api.openai.com/v1/chat/completions';
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages,
+      })
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`OpenAI API error: ${res.status} ${errText}`);
+    }
+
+    const data = (await res.json()) as any;
+    const text = data.choices?.[0]?.message?.content;
+    if (!text) throw new Error("Empty response from OpenAI");
+    return text;
+  }
+
+  if (provider === 'groq') {
+    const completion = await groq.chat.completions.create({
+      messages,
+      model: 'llama-3.3-70b-versatile',
+    });
+    const text = completion.choices[0]?.message?.content;
+    if (!text) throw new Error("Empty response from Groq");
+    return text;
+  }
+
+  throw new Error("No AI provider available");
+}
 
 // ── Summarize ──────────────────────────────────────────────────────────────
 
@@ -21,13 +232,9 @@ export async function summarizeNote(noteId: string, userId: string): Promise<str
   } else {
     try {
       const prompt = `You are an expert study assistant. Summarize the following study notes concisely and clearly. Use bullet points for key concepts. Keep it focused and educational.\n\nNotes:\n${note.content}`;
-      const chatCompletion = await groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: MODEL,
-      });
-      summary = chatCompletion.choices[0]?.message?.content || '';
+      summary = await callAi(prompt);
     } catch (error) {
-      console.warn("Groq summarize error, using fallback mock:", error);
+      console.warn("AI summarize error, using fallback mock:", error);
       summary = `- Key concept: Understanding the core principles of this topic.\n- Main idea: ${note.title} is an essential study material.\n- Details: The notes cover various fundamental aspects that are critical for mastery.\n- Conclusion: Review this material frequently to retain knowledge.`;
     }
   }
@@ -105,16 +312,11 @@ correctAnswer is the zero-based index of the correct option.
 Notes:
 ${note.content}`;
 
-      const chatCompletion = await groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: MODEL,
-        response_format: { type: "json_object" },
-      });
-      const text = chatCompletion.choices[0]?.message?.content || '{}';
+      const text = await callAi(prompt, { jsonMode: true });
       const parsed = JSON.parse(text);
       questions = parsed.questions || [];
     } catch (error) {
-      console.warn("Groq quiz error, using fallback mock:", error);
+      console.warn("AI quiz error, using fallback mock:", error);
       for (let i = 0; i < questionCount; i++) {
         questions.push({
           question: `What is a key takeaway from "${note.title}" (Practice Question ${i + 1})?`,
@@ -213,16 +415,11 @@ Return ONLY valid JSON in this format:
 Notes:
 ${note.content}`;
 
-      const chatCompletion = await groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: MODEL,
-        response_format: { type: "json_object" },
-      });
-      const text = chatCompletion.choices[0]?.message?.content || '{}';
+      const text = await callAi(prompt, { jsonMode: true });
       const parsed = JSON.parse(text);
       cards = parsed.flashcards || [];
     } catch (error) {
-      console.warn("Groq flashcard error, using fallback mock:", error);
+      console.warn("AI flashcard error, using fallback mock:", error);
       for (let i = 0; i < cardCount; i++) {
         cards.push({
           front: `Key Term ${i + 1} from ${note.title}`,
@@ -325,13 +522,9 @@ export async function magicGenerate(
   } else {
     try {
       const prompt = `You are an expert study assistant. Generate a comprehensive and educational study note about the following topic: "${topic}". The note should be well-structured with headings and bullet points.`;
-      const chatCompletion = await groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: MODEL,
-      });
-      noteContent = chatCompletion.choices[0]?.message?.content || '';
+      noteContent = await callAi(prompt);
     } catch (error) {
-      console.warn("Groq magic generate error, using fallback mock:", error);
+      console.warn("AI magic generate error, using fallback mock:", error);
       noteContent = `This is a magically generated offline note for the topic: ${topic}. The AI service is currently in offline mode.`;
     }
   }
@@ -367,6 +560,75 @@ export async function createChatSession(userId: string, noteId?: string) {
   return { session, noteContent };
 }
 
+async function getRealtimeContext(query: string): Promise<string> {
+  let context = "";
+
+  // 1. Wikipedia search
+  try {
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json`;
+    const searchRes = await fetch(searchUrl);
+    const searchData = (await searchRes.json()) as any;
+    
+    if (searchData.query?.search?.length > 0) {
+      const topHit = searchData.query.search[0];
+      const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&pageids=${topHit.pageid}&format=json`;
+      const extractRes = await fetch(extractUrl);
+      const extractData = (await extractRes.json()) as any;
+      const extract = extractData.query?.pages[topHit.pageid]?.extract || topHit.snippet.replace(/<[^>]+>/g, '');
+      context += `Wikipedia: ${topHit.title} - ${extract}\n\n`;
+    }
+  } catch (err) {
+    console.warn("Wikipedia search failed:", err);
+  }
+
+  // 2. DuckDuckGo search via duck-duck-scrape
+  try {
+    const { search } = require('duck-duck-scrape');
+    const ddgResults = await search(query);
+    if (ddgResults && ddgResults.results && ddgResults.results.length > 0) {
+      const hits = ddgResults.results.slice(0, 3).map((r: any) => `Search Result: ${r.title} - ${r.description}`).join('\n');
+      context += `DuckDuckGo Search Results:\n${hits}\n\n`;
+    }
+  } catch (err) {
+    console.warn("DuckDuckGo search via duck-duck-scrape failed, trying fallback...", err);
+    // Fallback: Google search via googlethis
+    try {
+      const google = require('googlethis');
+      const googleResults = await google.search(query, { hl: 'en', safe: false });
+      let hits: string[] = [];
+      if (googleResults.knowledge_panel?.description) {
+        hits.push(`Knowledge Panel: ${googleResults.knowledge_panel.title} - ${googleResults.knowledge_panel.description}`);
+      }
+      if (googleResults.featured_snippet?.description) {
+        hits.push(`Featured Snippet: ${googleResults.featured_snippet.title} - ${googleResults.featured_snippet.description}`);
+      }
+      googleResults.results.slice(0, 3).forEach((r: any) => {
+        hits.push(`Search Result: ${r.title} - ${r.description}`);
+      });
+      if (hits.length > 0) {
+        context += `Google Search Results:\n${hits.join('\n')}\n\n`;
+      }
+    } catch (gErr) {
+      console.warn("Google search via googlethis failed:", gErr);
+    }
+  }
+
+  // 3. News RSS Search (Google News RSS - very reliable, no blocking)
+  try {
+    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+    const res = await fetch(rssUrl);
+    const xml = await res.text();
+    const titles = [...xml.matchAll(/<title>(.*?)<\/title>/g)].slice(1, 4).map(m => m[1]);
+    if (titles.length > 0) {
+      context += `Recent News:\n${titles.map(t => `- ${t}`).join('\n')}\n\n`;
+    }
+  } catch (err) {
+    console.warn("Google News RSS search failed:", err);
+  }
+
+  return context.trim();
+}
+
 export async function sendChatMessage(
   sessionId: string,
   userId: string,
@@ -393,59 +655,32 @@ export async function sendChatMessage(
     try {
       const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
       
-      let wikiContext = "";
-      try {
-        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(userMessage)}&utf8=&format=json`;
-        const searchRes = await fetch(searchUrl);
-        const searchData = (await searchRes.json()) as any;
-        
-        if (searchData.query?.search?.length > 0) {
-          const topHit = searchData.query.search[0];
-          const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&pageids=${topHit.pageid}&format=json`;
-          const extractRes = await fetch(extractUrl);
-          const extractData = (await extractRes.json()) as any;
-          const extract = extractData.query?.pages[topHit.pageid]?.extract || topHit.snippet.replace(/<[^>]+>/g, '');
-          wikiContext += `\n\nLive Wikipedia Facts:\nTitle: ${topHit.title}\n${extract}`;
-        }
-      } catch (err) {
-        console.warn("Wiki search failed", err);
-      }
-
-      try {
-        const cheerio = require('cheerio');
-        const res = await fetch('https://html.duckduckgo.com/html/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-          },
-          body: new URLSearchParams({ q: userMessage })
-        });
-        const html = await res.text();
-        const $ = cheerio.load(html);
-        
-        let ddgResults: string[] = [];
-        $('.result').each((i: number, el: any) => {
-          if (i >= 3) return false;
-          const title = $(el).find('.result__title').text().trim();
-          const snippet = $(el).find('.result__snippet').text().trim();
-          if (title && snippet) {
-            ddgResults.push(`Search Result: ${title} - ${snippet}`);
-          }
-        });
-        
-        if (ddgResults.length > 0) {
-          wikiContext += `\n\nLive Web Search Results:\n${ddgResults.join('\n')}`;
-        }
-      } catch (err) {
-        console.warn("Web search failed", err);
-      }
+      const searchContext = await getRealtimeContext(userMessage);
 
       const systemPrompt = session.note
-        ? `You are a helpful AI study tutor. Today's date is ${currentDate}. ${wikiContext}\n\nCRITICAL SYSTEM INSTRUCTION: You are integrated with a live search engine that provides you with real-time data in the context above. The search engine runs silently in the background BEFORE you receive the prompt. You do NOT have the ability to call any search tools or functions yourself. You MUST NEVER output "<function=...>" or any XML tags. Just read the provided context above and answer the user directly in plain text. NEVER say you are a large language model, NEVER say you don't have access to real-time data, and NEVER mention a knowledge cutoff. Act as if you natively know this real-time information.\n\nThe student is studying the following material:\n\n${session.note.content}\n\nAnswer questions based on this material and the live context. Be clear, encouraging, and educational.`
-        : `You are a helpful AI study tutor. Today's date is ${currentDate}. ${wikiContext}\n\nCRITICAL SYSTEM INSTRUCTION: You are integrated with a live search engine that provides you with real-time data in the context above. The search engine runs silently in the background BEFORE you receive the prompt. You do NOT have the ability to call any search tools or functions yourself. You MUST NEVER output "<function=...>" or any XML tags. Just read the provided context above and answer the user directly in plain text. NEVER say you are a large language model, NEVER say you don't have access to real-time data, and NEVER mention a knowledge cutoff. Act as if you natively know this real-time information.\n\nAnswer the user's question accurately using the live context if relevant. Be clear, encouraging, and educational.`;
+        ? `You are a helpful and dedicated AI study tutor. Today's date is ${currentDate}.
 
-      const formattedMessages: any[] = [
+Real-time Search Context:
+${searchContext}
+
+STUDY MATERIAL:
+${session.note.content}
+
+CRITICAL RULES:
+1. You are a dedicated study assistant and tutor. You must ONLY answer educational, academic, or study-related questions. If the user asks off-topic, non-educational, or non-academic questions (e.g., casual chitchat, gaming, entertainment, recipes, or tasks unrelated to studying), you must politely decline to answer and guide them back to their studies.
+2. You are integrated with a live search engine that provides you with real-time data in the search context above. Do NOT mention that you run searches or have search tools. Do NOT say you don't have access to real-time data or mention a knowledge cutoff. Act as if you natively know this information.
+3. Answer questions based on the study material and the real-time search context above. Be clear, encouraging, and educational.`
+        : `You are a helpful and dedicated AI study tutor. Today's date is ${currentDate}.
+
+Real-time Search Context:
+${searchContext}
+
+CRITICAL RULES:
+1. You are a dedicated study assistant and tutor. You must ONLY answer educational, academic, or study-related questions. If the user asks off-topic, non-educational, or non-academic questions (e.g., casual chitchat, gaming, entertainment, recipes, or tasks unrelated to studying), you must politely decline to answer and guide them back to their studies.
+2. You are integrated with a live search engine that provides you with real-time data in the search context above. Do NOT mention that you run searches or have search tools. Do NOT say you don't have access to real-time data or mention a knowledge cutoff. Act as if you natively know this information.
+3. Answer the user's question accurately using the real-time search context if relevant. Be clear, encouraging, and educational.`;
+
+      const formattedMessages: ChatMessageInput[] = [
         { role: 'system', content: systemPrompt },
       ];
 
@@ -458,14 +693,9 @@ export async function sendChatMessage(
       
       formattedMessages.push({ role: 'user', content: userMessage });
 
-      const chatCompletion = await groq.chat.completions.create({
-        messages: formattedMessages,
-        model: MODEL,
-      });
-
-      assistantMessage = chatCompletion.choices[0]?.message?.content || '';
+      assistantMessage = await callAiChat(formattedMessages);
     } catch (error) {
-      console.warn("Groq chat error, using fallback mock:", error);
+      console.warn("AI tutor chat error, using fallback mock:", error);
       assistantMessage = `I'm your AI tutor! You said: "${userMessage}". I am currently operating in offline mode, but I'm still here to help you study.`;
     }
   }
