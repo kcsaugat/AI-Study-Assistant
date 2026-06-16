@@ -3,8 +3,8 @@
     { "source": "/(.*)", "destination": "/api/server.ts" }
   ],
   "env": {
-    "DATABASE_URL": "postgresql://postgres:my1st%40aiproject@db.xcecvdzptcvtlgcnusng.supabase.co:5432/postgres",
-    "DIRECT_URL": "postgresql://postgres:my1st%40aiproject@db.xcecvdzptcvtlgcnusng.supabase.co:5432/postgres",
+    "DATABASE_URL": "postgresql://postgres.xcecvdzptcvtlgcnusng:my1st%40aiproject@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=require",
+    "DIRECT_URL": "postgresql://postgres.xcecvdzptcvtlgcnusng:my1st%40aiproject@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
     "JWT_SECRET": "my-secret-key-for-jwt-12345",
     "JWT_REFRESH_SECRET": "my-secret-key-for-refresh-12345",
     "VERCEL": "1"
