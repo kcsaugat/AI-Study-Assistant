@@ -15,8 +15,8 @@
     }
   },
   "env": {
-    "DATABASE_URL": "postgresql://postgres.pqzyniuzuodkqjyymkdk:my1st%40aiproject@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true",
-    "DIRECT_URL": "postgresql://postgres.pqzyniuzuodkqjyymkdk:my1st%40aiproject@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres",
+    "DATABASE_URL": "postgresql://postgres.xcecvdzptcvtlgcnusng:my1st%40aiproject@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true",
+    "DIRECT_URL": "postgresql://postgres.xcecvdzptcvtlgcnusng:my1st%40aiproject@aws-0-us-east-1.pooler.supabase.com:5432/postgres",
     "JWT_SECRET": "my-secret-key-for-jwt-12345",
     "JWT_REFRESH_SECRET": "my-secret-key-for-refresh-12345",
     "VERCEL": "1"
