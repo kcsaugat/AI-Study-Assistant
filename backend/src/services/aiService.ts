@@ -9,102 +9,60 @@ export interface UserApiKeys {
   openaiApiKey?: string;
 }
 
+function cleanSentence(s: string): string {
+  return s
+    .replace(/^(Wikipedia:\s*|DuckDuckGo Search Results:\s*|Search Result:\s*|Recent News:\s*|Knowledge Panel:\s*|Featured Snippet:\s*|- \s*)/i, '')
+    .trim();
+}
+
 function generateOfflineSummary(title: string, content: string): string {
-  const sentences = content
-    .split(/[.!?]+/)
+  const rawSentences = content
+    .split(/[.!?\n]+/)
     .map(s => s.trim())
-    .filter(s => s.length > 15 && s.length < 200);
+    .filter(s => s.length > 15 && s.length < 300);
+
+  const sentences = rawSentences.map(cleanSentence).filter(s => s.length > 15);
 
   if (sentences.length === 0) {
-    return `- Key Concept: ${title}\n- Details: Review the note content to understand the details.`;
+    return `- Key Concept: ${title}\n- Details: Review the note content to understand the details of ${title}.`;
   }
 
-  const keySentences = sentences.filter(s => 
-    /\b(is|are|defined|refers|means|important|key|main|essential|principle|concept|use|function|result)\b/i.test(s)
+  const uniqueSentences = Array.from(new Set(sentences));
+
+  const keySentences = uniqueSentences.filter(s => 
+    /\b(is|are|defined|refers|means|important|key|main|essential|principle|concept|use|function|result|discovered|created|developed|established|war|battle|history)\b/i.test(s)
   );
 
-  const selected = keySentences.slice(0, 4);
-  if (selected.length < 2) {
-    selected.push(...sentences.slice(0, 4 - selected.length));
+  const selected = keySentences.slice(0, 5);
+  if (selected.length < 3) {
+    for (const s of uniqueSentences) {
+      if (!selected.includes(s)) {
+        selected.push(s);
+      }
+      if (selected.length >= 5) break;
+    }
   }
 
   return selected.map((s, idx) => {
     if (idx === 0) return `- Main Idea: ${s}`;
-    if (idx === 3) return `- Summary: ${s}`;
+    if (idx === selected.length - 1) return `- Summary: ${s}`;
     return `- Key Concept: ${s}`;
   }).join('\n');
 }
 
 function generateOfflineQuiz(title: string, content: string, count: number): QuizQuestion[] {
-  const sentences = content
-    .split(/[.!?]+/)
+  const rawSentences = content
+    .split(/[.!?\n]+/)
     .map(s => s.trim())
-    .filter(s => s.length > 25 && s.length < 150 && s.includes(' '));
+    .filter(s => s.length > 25 && s.length < 250);
+
+  const sentences = Array.from(new Set(rawSentences.map(cleanSentence).filter(s => s.length > 25 && s.includes(' '))));
 
   const questions: QuizQuestion[] = [];
-  const stopWords = new Set(['the', 'and', 'a', 'of', 'to', 'in', 'is', 'that', 'it', 'for', 'on', 'with', 'as', 'this', 'are', 'was', 'by', 'an', 'be', 'at', 'or', 'from', 'they', 'have']);
+  const stopWords = new Set(['the', 'and', 'a', 'of', 'to', 'in', 'is', 'that', 'it', 'for', 'on', 'with', 'as', 'this', 'are', 'was', 'by', 'an', 'be', 'at', 'or', 'from', 'they', 'have', 'were', 'had', 'been', 'which', 'who', 'has', 'but', 'not']);
 
-  for (let i = 0; i < Math.min(count, sentences.length); i++) {
-    const sentence = sentences[i];
-    const words = sentence
-      .replace(/[^a-zA-Z\s]/g, '')
-      .split(/\s+/)
-      .filter(w => w.length > 3 && !stopWords.has(w.toLowerCase()));
-
-    if (words.length > 0) {
-      const correctAnswerWord = words[Math.floor(Math.random() * words.length)];
-      const regex = new RegExp(`\\b${correctAnswerWord}\\b`, 'i');
-      const questionText = sentence.replace(regex, '_______');
-
-      const otherWords = Array.from(new Set(
-        content
-          .replace(/[^a-zA-Z\s]/g, '')
-          .split(/\s+/)
-          .filter(w => w.length > 3 && !stopWords.has(w.toLowerCase()) && w.toLowerCase() !== correctAnswerWord.toLowerCase())
-      )).slice(0, 10);
-
-      const genericOptions = ['Concept', 'Function', 'Process', 'System', 'Variable', 'Theory', 'Method'];
-      const optionsPool = [...otherWords, ...genericOptions].filter(w => w.toLowerCase() !== correctAnswerWord.toLowerCase());
-      optionsPool.sort(() => 0.5 - Math.random());
-
-      const incorrectOptions = optionsPool.slice(0, 3);
-      const options = [correctAnswerWord, ...incorrectOptions];
-      options.sort(() => 0.5 - Math.random());
-      
-      const correctAnswerIndex = options.indexOf(correctAnswerWord);
-
-      questions.push({
-        question: `Fill in the blank: "${questionText}"`,
-        options,
-        correctAnswer: correctAnswerIndex,
-        explanation: `In the study notes for "${title}", the full statement is: "${sentence}".`
-      });
-    }
-  }
-
-  while (questions.length < count) {
-    const idx = questions.length + 1;
-    questions.push({
-      question: `What is the primary topic of the study note "${title}"?`,
-      options: [title, `An unrelated subtopic of ${title}`, `A historical overview of ${title}`, `The mathematical formula of ${title}`],
-      correctAnswer: 0,
-      explanation: `This note focuses on the main topic: "${title}".`
-    });
-  }
-
-  return questions;
-}
-
-function generateOfflineFlashcards(title: string, content: string, count: number): FlashcardItem[] {
-  const sentences = content
-    .split(/[.!?]+/)
-    .map(s => s.trim())
-    .filter(s => s.length > 20 && s.length < 150);
-
-  const cards: FlashcardItem[] = [];
-  const stopWords = new Set(['the', 'and', 'a', 'of', 'to', 'in', 'is', 'that', 'it', 'for', 'on', 'with', 'as', 'this', 'are', 'was', 'by', 'an', 'be', 'at', 'or', 'from']);
-
-  for (let i = 0; i < Math.min(count, sentences.length); i++) {
+  for (let i = 0; i < sentences.length; i++) {
+    if (questions.length >= count) break;
     const sentence = sentences[i];
     const words = sentence
       .replace(/[^a-zA-Z\s]/g, '')
@@ -112,21 +70,161 @@ function generateOfflineFlashcards(title: string, content: string, count: number
       .filter(w => w.length > 4 && !stopWords.has(w.toLowerCase()));
 
     if (words.length > 0) {
-      const term = words[Math.floor(Math.random() * words.length)];
-      const capitalizedTerm = term.charAt(0).toUpperCase() + term.slice(1);
-      cards.push({
-        front: capitalizedTerm,
-        back: `In "${title}", this term is used in the context of: "${sentence}"`
-      });
+      const firstWord = sentence.split(/\s+/)[0].replace(/[^a-zA-Z]/g, '');
+      const keyWords = words.filter(w => w !== firstWord && w.charAt(0) === w.charAt(0).toUpperCase());
+      const candidateWords = keyWords.length > 0 ? keyWords : words.sort((a, b) => b.length - a.length).slice(0, 5);
+
+      if (candidateWords.length > 0) {
+        const correctAnswerWord = candidateWords[Math.floor(Math.random() * candidateWords.length)];
+        const regex = new RegExp(`\\b${correctAnswerWord}\\b`, 'i');
+        const questionText = sentence.replace(regex, '_______');
+
+        const otherWords = Array.from(new Set(
+          content
+            .replace(/[^a-zA-Z\s]/g, '')
+            .split(/\s+/)
+            .filter(w => w.length > 4 && !stopWords.has(w.toLowerCase()) && w.toLowerCase() !== correctAnswerWord.toLowerCase())
+        )).slice(0, 15);
+
+        const genericOptions = ['Concept', 'Function', 'Process', 'System', 'Variable', 'Theory', 'Method', 'Structure', 'Development', 'Analysis'];
+        const optionsPool = [...otherWords, ...genericOptions].filter(w => w.toLowerCase() !== correctAnswerWord.toLowerCase());
+        optionsPool.sort(() => 0.5 - Math.random());
+
+        const incorrectOptions = optionsPool.slice(0, 3);
+        while (incorrectOptions.length < 3) {
+          const fallback = ['Mechanism', 'Factor', 'Parameter', 'Framework', 'Context'][incorrectOptions.length];
+          incorrectOptions.push(fallback);
+        }
+
+        const options = [correctAnswerWord, ...incorrectOptions];
+        options.sort(() => 0.5 - Math.random());
+        const correctAnswerIndex = options.indexOf(correctAnswerWord);
+
+        questions.push({
+          question: `Fill in the blank: "${questionText}"`,
+          options,
+          correctAnswer: correctAnswerIndex,
+          explanation: `In the study notes for "${title}", the full statement is: "${sentence}".`
+        });
+      }
     }
   }
 
-  while (cards.length < count) {
-    const idx = cards.length + 1;
-    cards.push({
-      front: `Concept ${idx} for ${title}`,
-      back: `Review your notes for "${title}" to master this key concept.`
-    });
+  const fallbackQuestions = [
+    {
+      question: `Which of the following best describes the core concept of "${title}"?`,
+      options: [
+        `The primary subject and definition of ${title}`,
+        `A minor, unrelated detail of ${title}`,
+        `The opposite concept of ${title}`,
+        `A legacy system that was replaced by ${title}`
+      ],
+      correctAnswer: 0,
+      explanation: `Understanding the main idea of "${title}" is crucial for mastering this topic.`
+    },
+    {
+      question: `What is a key benefit of studying "${title}"?`,
+      options: [
+        `Gaining fundamental academic and practical insights into ${title}`,
+        `Memorizing unrelated dates and numbers`,
+        `Skipping core syllabus topics`,
+        `Avoiding exams on ${title}`
+      ],
+      correctAnswer: 0,
+      explanation: `Studying "${title}" helps build foundational knowledge and problem-solving skills in this area.`
+    },
+    {
+      question: `In what context is "${title}" most commonly discussed?`,
+      options: [
+        `Academic and practical application domains`,
+        `Fiction and mythological stories`,
+        `Unrelated recreational hobbies`,
+        `Sports and gaming regulations`
+      ],
+      correctAnswer: 0,
+      explanation: `"${title}" is a serious academic subject with practical applications.`
+    },
+    {
+      question: `Which component is most essential to understanding "${title}"?`,
+      options: [
+        `The core principles and definitions of ${title}`,
+        `The font style used in writing ${title}`,
+        `The color scheme of the study guide`,
+        `The date the study notes were first created`
+      ],
+      correctAnswer: 0,
+      explanation: `Core principles define the structure and behavior of ${title}.`
+    },
+    {
+      question: `What is the best way to master the topic of "${title}"?`,
+      options: [
+        `Regular active recall, quiz testing, and reviewing notes`,
+        `Reading the title once and ignoring it`,
+        `Skipping class discussions on ${title}`,
+        `Hoping to guess answers on exams`
+      ],
+      correctAnswer: 0,
+      explanation: `Active recall and spaced repetition are proven methods for studying "${title}".`
+    }
+  ];
+
+  let fallbackIdx = 0;
+  while (questions.length < count && fallbackIdx < fallbackQuestions.length) {
+    questions.push(fallbackQuestions[fallbackIdx++]);
+  }
+
+  return questions;
+}
+
+function generateOfflineFlashcards(title: string, content: string, count: number): FlashcardItem[] {
+  const rawSentences = content
+    .split(/[.!?\n]+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 20 && s.length < 200);
+
+  const sentences = Array.from(new Set(rawSentences.map(cleanSentence).filter(s => s.length > 20)));
+
+  const cards: FlashcardItem[] = [];
+  const stopWords = new Set(['the', 'and', 'a', 'of', 'to', 'in', 'is', 'that', 'it', 'for', 'on', 'with', 'as', 'this', 'are', 'was', 'by', 'an', 'be', 'at', 'or', 'from', 'they', 'have', 'were', 'had', 'been', 'which', 'who', 'has']);
+
+  for (let i = 0; i < sentences.length; i++) {
+    if (cards.length >= count) break;
+    const sentence = sentences[i];
+    const words = sentence
+      .replace(/[^a-zA-Z\s]/g, '')
+      .split(/\s+/)
+      .filter(w => w.length > 5 && !stopWords.has(w.toLowerCase()));
+
+    if (words.length > 0) {
+      const keyWords = words.filter(w => w.charAt(0) === w.charAt(0).toUpperCase());
+      const term = keyWords.length > 0 ? keyWords[0] : words.sort((a, b) => b.length - a.length)[0];
+      const capitalizedTerm = term.charAt(0).toUpperCase() + term.slice(1);
+      
+      if (!cards.some(c => c.front.toLowerCase() === capitalizedTerm.toLowerCase())) {
+        cards.push({
+          front: capitalizedTerm,
+          back: `In the context of ${title}: "${sentence}"`
+        });
+      }
+    }
+  }
+
+  const fallbackTerms = [
+    { front: `Core Definition of ${title}`, back: `The primary meaning, scope, and boundaries of the topic "${title}".` },
+    { front: `Key Principles of ${title}`, back: `The fundamental laws, rules, or assumptions that govern "${title}".` },
+    { front: `Practical Application of ${title}`, back: `How the concept of "${title}" is used in real-world scenarios.` },
+    { front: `Common Misconceptions about ${title}`, back: `Typical errors or misunderstandings students face when studying "${title}".` },
+    { front: `Advanced Topics in ${title}`, back: `Higher-level subtopics and research areas connected to "${title}".` },
+    { front: `Historical Context of ${title}`, back: `The origin, discovery, or historical background of the topic "${title}".` },
+    { front: `Main Goal of studying ${title}`, back: `To achieve a deep conceptual understanding and practical mastery of "${title}".` }
+  ];
+
+  let fallbackIdx = 0;
+  while (cards.length < count && fallbackIdx < fallbackTerms.length) {
+    const term = fallbackTerms[fallbackIdx++];
+    if (!cards.some(c => c.front.toLowerCase() === term.front.toLowerCase())) {
+      cards.push(term);
+    }
   }
 
   return cards;
@@ -367,20 +465,44 @@ export async function summarizeNote(noteId: string, userId: string, userKeys?: U
   const note = await prisma.note.findFirst({ where: { id: noteId, userId } });
   if (!note) throw Object.assign(new Error('Note not found'), { statusCode: 404 });
 
+  const isPlaceholder = note.content.includes("magically generated offline note") || 
+                        note.content.includes("offline mode") ||
+                        note.content.trim().length < 150;
+
+  let contentToUse = note.content;
+  if (isPlaceholder) {
+    const searchContext = await getRealtimeContext(note.title);
+    if (searchContext && searchContext.trim().length > 100) {
+      contentToUse = `### Study Material: ${note.title}\n\nGenerated from live search engine data.\n\n${searchContext}`;
+      await prisma.note.update({
+        where: { id: noteId },
+        data: { content: contentToUse }
+      });
+      note.content = contentToUse;
+    }
+  }
+
+  if (contentToUse.trim().length < 1000) {
+    const searchContext = await getRealtimeContext(note.title);
+    if (searchContext && searchContext.trim().length > 100) {
+      contentToUse = `${contentToUse}\n\n### Additional Search Context:\n${searchContext}`;
+    }
+  }
+
   let summary = '';
   
   if (shouldMock(userKeys)) {
-    summary = generateOfflineSummary(note.title, note.content);
+    summary = generateOfflineSummary(note.title, contentToUse);
   } else {
     try {
-      const prompt = `You are an expert study assistant. Summarize the following study notes concisely and clearly. Use bullet points for key concepts. Keep it focused and educational.\n\nNotes:\n${note.content}`;
+      const prompt = `You are an expert study assistant. Summarize the following study notes concisely and clearly. Use bullet points for key concepts. Keep it focused and educational.\n\nNotes:\n${contentToUse}`;
       summary = await callAi(prompt, undefined, userKeys);
     } catch (error) {
       if (userKeys && (userKeys.geminiApiKey || userKeys.groqApiKey || userKeys.openaiApiKey)) {
         throw error;
       }
       console.warn("AI summarize error, using fallback mock:", error);
-      summary = generateOfflineSummary(note.title, note.content);
+      summary = generateOfflineSummary(note.title, contentToUse);
     }
   }
 
@@ -429,10 +551,34 @@ export async function generateQuiz(
   const note = await prisma.note.findFirst({ where: { id: noteId, userId } });
   if (!note) throw Object.assign(new Error('Note not found'), { statusCode: 404 });
 
+  const isPlaceholder = note.content.includes("magically generated offline note") || 
+                        note.content.includes("offline mode") ||
+                        note.content.trim().length < 150;
+
+  let contentToUse = note.content;
+  if (isPlaceholder) {
+    const searchContext = await getRealtimeContext(note.title);
+    if (searchContext && searchContext.trim().length > 100) {
+      contentToUse = `### Study Material: ${note.title}\n\nGenerated from live search engine data.\n\n${searchContext}`;
+      await prisma.note.update({
+        where: { id: noteId },
+        data: { content: contentToUse }
+      });
+      note.content = contentToUse;
+    }
+  }
+
+  if (contentToUse.trim().length < 1000) {
+    const searchContext = await getRealtimeContext(note.title);
+    if (searchContext && searchContext.trim().length > 100) {
+      contentToUse = `${contentToUse}\n\n### Additional Search Context:\n${searchContext}`;
+    }
+  }
+
   let questions: QuizQuestion[] = [];
 
   if (shouldMock(userKeys)) {
-    questions = generateOfflineQuiz(note.title, note.content, questionCount);
+    questions = generateOfflineQuiz(note.title, contentToUse, questionCount);
   } else {
     try {
       const prompt = `You are a quiz generator. Generate exactly ${questionCount} multiple-choice questions from the provided study notes. 
@@ -449,7 +595,7 @@ Return ONLY a valid JSON object with a single key "questions" containing an arra
 }
 correctAnswer is the zero-based index of the correct option.
 Notes:
-${note.content}`;
+${contentToUse}`;
 
       const text = await callAi(prompt, { jsonMode: true }, userKeys);
       const parsed = JSON.parse(text);
@@ -459,7 +605,7 @@ ${note.content}`;
         throw error;
       }
       console.warn("AI quiz error, using fallback mock:", error);
-      questions = generateOfflineQuiz(note.title, note.content, questionCount);
+      questions = generateOfflineQuiz(note.title, contentToUse, questionCount);
     }
   }
 
@@ -530,10 +676,34 @@ export async function generateFlashcards(
   const note = await prisma.note.findFirst({ where: { id: noteId, userId } });
   if (!note) throw Object.assign(new Error('Note not found'), { statusCode: 404 });
 
+  const isPlaceholder = note.content.includes("magically generated offline note") || 
+                        note.content.includes("offline mode") ||
+                        note.content.trim().length < 150;
+
+  let contentToUse = note.content;
+  if (isPlaceholder) {
+    const searchContext = await getRealtimeContext(note.title);
+    if (searchContext && searchContext.trim().length > 100) {
+      contentToUse = `### Study Material: ${note.title}\n\nGenerated from live search engine data.\n\n${searchContext}`;
+      await prisma.note.update({
+        where: { id: noteId },
+        data: { content: contentToUse }
+      });
+      note.content = contentToUse;
+    }
+  }
+
+  if (contentToUse.trim().length < 1000) {
+    const searchContext = await getRealtimeContext(note.title);
+    if (searchContext && searchContext.trim().length > 100) {
+      contentToUse = `${contentToUse}\n\n### Additional Search Context:\n${searchContext}`;
+    }
+  }
+
   let cards: FlashcardItem[] = [];
 
   if (shouldMock(userKeys)) {
-    cards = generateOfflineFlashcards(note.title, note.content, cardCount);
+    cards = generateOfflineFlashcards(note.title, contentToUse, cardCount);
   } else {
     try {
       const prompt = `You are a flashcard generator. Create exactly ${cardCount} study flashcards from the provided notes.
@@ -544,7 +714,7 @@ Return ONLY valid JSON in this format:
   ]
 }
 Notes:
-${note.content}`;
+${contentToUse}`;
 
       const text = await callAi(prompt, { jsonMode: true }, userKeys);
       const parsed = JSON.parse(text);
@@ -554,7 +724,7 @@ ${note.content}`;
         throw error;
       }
       console.warn("AI flashcard error, using fallback mock:", error);
-      cards = generateOfflineFlashcards(note.title, note.content, cardCount);
+      cards = generateOfflineFlashcards(note.title, contentToUse, cardCount);
     }
   }
 
