@@ -647,18 +647,36 @@ export async function magicGenerate(
 ): Promise<{ noteId: string }> {
   let noteContent = '';
 
+  console.log(`Magic generating for topic: ${topic}. Fetching realtime context...`);
+  const searchContext = await getRealtimeContext(topic);
+
   if (shouldMock(userKeys)) {
-    noteContent = `This is a magically generated study note for the topic: ${topic}. It covers all the essential concepts of ${topic} to help you study effectively while in offline mode.`;
+    if (searchContext && searchContext.trim().length > 100) {
+      noteContent = `### Study Material: ${topic}\n\nGenerated from live search engine data.\n\n${searchContext}`;
+    } else {
+      noteContent = `### Study Material: ${topic}\n\nThis is a study note for the topic: ${topic}. It covers the core aspects of the topic to help you study effectively while in offline mode.`;
+    }
   } else {
     try {
-      const prompt = `You are an expert study assistant. Generate a comprehensive and educational study note about the following topic: "${topic}". The note should be well-structured with headings and bullet points.`;
+      const prompt = `You are an expert study assistant. Generate a comprehensive, well-structured, and educational study note about the following topic: "${topic}". 
+Use the following real-time web search results as reference context to make the study note highly accurate and rich:
+
+Search Context:
+${searchContext}
+
+The note should contain headings, subheadings, and bullet points. Do not mention that you did a search or used search tools; act as if you natively know this information.`;
+
       noteContent = await callAi(prompt, undefined, userKeys);
     } catch (error) {
       if (userKeys && (userKeys.geminiApiKey || userKeys.groqApiKey || userKeys.openaiApiKey)) {
         throw error;
       }
       console.warn("AI magic generate error, using fallback mock:", error);
-      noteContent = `This is a magically generated offline note for the topic: ${topic}. The AI service is currently in offline mode.`;
+      if (searchContext && searchContext.trim().length > 100) {
+        noteContent = `### Study Material: ${topic}\n\nGenerated from live search engine data (fallback).\n\n${searchContext}`;
+      } else {
+        noteContent = `### Study Material: ${topic}\n\nThis is a study note for the topic: ${topic}. The AI service is currently in offline mode.`;
+      }
     }
   }
 
