@@ -5,12 +5,16 @@ import {
   generateFlashcardsHandler, getFlashcardsHandler, deleteFlashcardDeckHandler, reviewFlashcardHandler,
   createSession, sendMessage, getSessionsHandler, getMessagesHandler, deleteSessionHandler,
   magicGenerateHandler,
+  getAiStatus,
 } from '../controllers/aiController';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
 router.use(authenticate);
+
+// AI Status
+router.get('/status', getAiStatus);
 
 // Magic Generate
 router.post('/magic-generate', magicGenerateHandler);

@@ -7,14 +7,23 @@ import {
   createChatSession, sendChatMessage,
   getChatSessions, getChatMessages, deleteChatSession,
   magicGenerate,
+  UserApiKeys,
 } from '../services/aiService';
 import { sendSuccess, sendError } from '../utils/response';
+
+function getUserKeys(req: AuthRequest): UserApiKeys {
+  return {
+    geminiApiKey: req.headers['x-gemini-api-key'] as string | undefined,
+    groqApiKey: req.headers['x-groq-api-key'] as string | undefined,
+    openaiApiKey: req.headers['x-openai-api-key'] as string | undefined,
+  };
+}
 
 // ── Summary ────────────────────────────────────────────────────────────────
 
 export async function summarize(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const summary = await summarizeNote(req.params.noteId, req.user!.userId);
+    const summary = await summarizeNote(req.params.noteId, req.user!.userId, getUserKeys(req));
     return sendSuccess(res, { summary }, 'Summary generated');
   } catch (err) {
     return next(err);
@@ -44,7 +53,7 @@ export async function deleteSummaryHandler(req: AuthRequest, res: Response, next
 export async function generateQuizHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const count = Number(req.body.questionCount) || 5;
-    const result = await generateQuiz(req.params.noteId, req.user!.userId, count);
+    const result = await generateQuiz(req.params.noteId, req.user!.userId, count, getUserKeys(req));
     return sendSuccess(res, result, 'Quiz generated', 201);
   } catch (err) {
     return next(err);
@@ -74,7 +83,7 @@ export async function deleteQuizHandler(req: AuthRequest, res: Response, next: N
 export async function generateFlashcardsHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const count = Number(req.body.cardCount) || 10;
-    const result = await generateFlashcards(req.params.noteId, req.user!.userId, count);
+    const result = await generateFlashcards(req.params.noteId, req.user!.userId, count, getUserKeys(req));
     return sendSuccess(res, result, 'Flashcards generated', 201);
   } catch (err) {
     return next(err);
@@ -128,7 +137,7 @@ export async function sendMessage(req: AuthRequest, res: Response, next: NextFun
   try {
     const { message } = req.body;
     if (!message?.trim()) return sendError(res, 'Message is required', 400);
-    const reply = await sendChatMessage(req.params.sessionId, req.user!.userId, message);
+    const reply = await sendChatMessage(req.params.sessionId, req.user!.userId, message, getUserKeys(req));
     return sendSuccess(res, { reply }, 'Message sent');
   } catch (err) {
     return next(err);
@@ -170,7 +179,7 @@ export async function magicGenerateHandler(req: AuthRequest, res: Response, next
     if (!topic || !type) {
       return sendError(res, 'Topic and type are required', 400);
     }
-    const result = await magicGenerate(req.user!.userId, topic, type);
+    const result = await magicGenerate(req.user!.userId, topic, type, getUserKeys(req));
     return sendSuccess(res, result, 'Magic generation complete', 201);
   } catch (err) {
     return next(err);
@@ -232,6 +241,22 @@ export async function deletePlannerEventHandler(req: AuthRequest, res: Response,
   try {
     await deletePlannerEvent(req.user!.userId, req.params.eventId);
     return sendSuccess(res, null, 'Planner event deleted');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function getAiStatus(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const geminiConfigured = !!(process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY.includes('key-here') && !process.env.GEMINI_API_KEY.includes('your_gemini'));
+    const groqConfigured = !!(process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes('key-here') && !process.env.GROQ_API_KEY.includes('your_groq'));
+    const openaiConfigured = !!(process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes('key-here') && !process.env.OPENAI_API_KEY.includes('your_openai') && !process.env.OPENAI_API_KEY.includes('sk-...'));
+    
+    return sendSuccess(res, {
+      geminiConfigured,
+      groqConfigured,
+      openaiConfigured,
+    });
   } catch (err) {
     return next(err);
   }

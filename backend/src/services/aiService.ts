@@ -3,21 +3,30 @@ import { prisma } from '../config/database';
 
 declare const fetch: any;
 
-function getAiProvider(): 'gemini' | 'groq' | 'openai' | 'mock' {
-  if (process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY.includes('key-here') && !process.env.GEMINI_API_KEY.includes('your_gemini')) {
+export interface UserApiKeys {
+  geminiApiKey?: string;
+  groqApiKey?: string;
+  openaiApiKey?: string;
+}
+
+function getAiProvider(userKeys?: UserApiKeys): 'gemini' | 'groq' | 'openai' | 'mock' {
+  const geminiKey = userKeys?.geminiApiKey || process.env.GEMINI_API_KEY;
+  if (geminiKey && !geminiKey.includes('key-here') && !geminiKey.includes('your_gemini')) {
     return 'gemini';
   }
-  if (process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes('key-here') && !process.env.GROQ_API_KEY.includes('your_groq')) {
+  const groqKey = userKeys?.groqApiKey || process.env.GROQ_API_KEY;
+  if (groqKey && !groqKey.includes('key-here') && !groqKey.includes('your_groq')) {
     return 'groq';
   }
-  if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes('key-here') && !process.env.OPENAI_API_KEY.includes('your_openai') && !process.env.OPENAI_API_KEY.includes('sk-...')) {
+  const openaiKey = userKeys?.openaiApiKey || process.env.OPENAI_API_KEY;
+  if (openaiKey && !openaiKey.includes('key-here') && !openaiKey.includes('your_openai') && !openaiKey.includes('sk-...')) {
     return 'openai';
   }
   return 'mock';
 }
 
-function shouldMock() {
-  return getAiProvider() === 'mock';
+function shouldMock(userKeys?: UserApiKeys) {
+  return getAiProvider(userKeys) === 'mock';
 }
 
 interface CallAiOptions {
@@ -30,11 +39,11 @@ interface ChatMessageInput {
   content: string;
 }
 
-async function callAi(prompt: string, options?: CallAiOptions): Promise<string> {
-  const provider = getAiProvider();
+async function callAi(prompt: string, options?: CallAiOptions, userKeys?: UserApiKeys): Promise<string> {
+  const provider = getAiProvider(userKeys);
 
   if (provider === 'gemini') {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = userKeys?.geminiApiKey || process.env.GEMINI_API_KEY;
     const modelName = "gemini-2.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
@@ -72,7 +81,7 @@ async function callAi(prompt: string, options?: CallAiOptions): Promise<string> 
   }
 
   if (provider === 'openai') {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = userKeys?.openaiApiKey || process.env.OPENAI_API_KEY;
     const url = 'https://api.openai.com/v1/chat/completions';
 
     const messages: any[] = [];
@@ -111,6 +120,10 @@ async function callAi(prompt: string, options?: CallAiOptions): Promise<string> 
   }
 
   if (provider === 'groq') {
+    const { Groq } = require('groq-sdk');
+    const apiKey = userKeys?.groqApiKey || process.env.GROQ_API_KEY;
+    const groqInstance = new Groq({ apiKey });
+
     const messages: any[] = [];
     if (options?.systemPrompt) {
       messages.push({ role: 'system', content: options.systemPrompt });
@@ -126,7 +139,7 @@ async function callAi(prompt: string, options?: CallAiOptions): Promise<string> 
       params.response_format = { type: 'json_object' };
     }
 
-    const completion = await groq.chat.completions.create(params);
+    const completion = await groqInstance.chat.completions.create(params);
     const text = completion.choices[0]?.message?.content;
     if (!text) throw new Error("Empty response from Groq");
     return text;
@@ -135,11 +148,11 @@ async function callAi(prompt: string, options?: CallAiOptions): Promise<string> 
   throw new Error("No AI provider available");
 }
 
-async function callAiChat(messages: ChatMessageInput[]): Promise<string> {
-  const provider = getAiProvider();
+async function callAiChat(messages: ChatMessageInput[], userKeys?: UserApiKeys): Promise<string> {
+  const provider = getAiProvider(userKeys);
 
   if (provider === 'gemini') {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = userKeys?.geminiApiKey || process.env.GEMINI_API_KEY;
     const modelName = "gemini-2.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
@@ -182,7 +195,7 @@ async function callAiChat(messages: ChatMessageInput[]): Promise<string> {
   }
 
   if (provider === 'openai') {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = userKeys?.openaiApiKey || process.env.OPENAI_API_KEY;
     const url = 'https://api.openai.com/v1/chat/completions';
 
     const res = await fetch(url, {
@@ -209,7 +222,11 @@ async function callAiChat(messages: ChatMessageInput[]): Promise<string> {
   }
 
   if (provider === 'groq') {
-    const completion = await groq.chat.completions.create({
+    const { Groq } = require('groq-sdk');
+    const apiKey = userKeys?.groqApiKey || process.env.GROQ_API_KEY;
+    const groqInstance = new Groq({ apiKey });
+
+    const completion = await groqInstance.chat.completions.create({
       messages,
       model: 'llama-3.3-70b-versatile',
     });
@@ -223,18 +240,18 @@ async function callAiChat(messages: ChatMessageInput[]): Promise<string> {
 
 // ── Summarize ──────────────────────────────────────────────────────────────
 
-export async function summarizeNote(noteId: string, userId: string): Promise<string> {
+export async function summarizeNote(noteId: string, userId: string, userKeys?: UserApiKeys): Promise<string> {
   const note = await prisma.note.findFirst({ where: { id: noteId, userId } });
   if (!note) throw Object.assign(new Error('Note not found'), { statusCode: 404 });
 
   let summary = '';
   
-  if (shouldMock()) {
+  if (shouldMock(userKeys)) {
     summary = `- Key concept: Understanding the core principles of this topic.\n- Main idea: ${note.title} is an essential study material.\n- Details: The notes cover various fundamental aspects that are critical for mastery.\n- Conclusion: Review this material frequently to retain knowledge.`;
   } else {
     try {
       const prompt = `You are an expert study assistant. Summarize the following study notes concisely and clearly. Use bullet points for key concepts. Keep it focused and educational.\n\nNotes:\n${note.content}`;
-      summary = await callAi(prompt);
+      summary = await callAi(prompt, undefined, userKeys);
     } catch (error) {
       console.warn("AI summarize error, using fallback mock:", error);
       summary = `- Key concept: Understanding the core principles of this topic.\n- Main idea: ${note.title} is an essential study material.\n- Details: The notes cover various fundamental aspects that are critical for mastery.\n- Conclusion: Review this material frequently to retain knowledge.`;
@@ -280,14 +297,15 @@ export interface QuizQuestion {
 export async function generateQuiz(
   noteId: string,
   userId: string,
-  questionCount = 5
+  questionCount = 5,
+  userKeys?: UserApiKeys
 ): Promise<{ quizId: string; questions: QuizQuestion[] }> {
   const note = await prisma.note.findFirst({ where: { id: noteId, userId } });
   if (!note) throw Object.assign(new Error('Note not found'), { statusCode: 404 });
 
   let questions: QuizQuestion[] = [];
 
-  if (shouldMock()) {
+  if (shouldMock(userKeys)) {
     for (let i = 0; i < questionCount; i++) {
       questions.push({
         question: `What is a key takeaway from "${note.title}" (Practice Question ${i + 1})?`,
@@ -314,7 +332,7 @@ correctAnswer is the zero-based index of the correct option.
 Notes:
 ${note.content}`;
 
-      const text = await callAi(prompt, { jsonMode: true });
+      const text = await callAi(prompt, { jsonMode: true }, userKeys);
       const parsed = JSON.parse(text);
       questions = parsed.questions || [];
     } catch (error) {
@@ -391,14 +409,15 @@ export interface FlashcardItem {
 export async function generateFlashcards(
   noteId: string,
   userId: string,
-  cardCount = 10
+  cardCount = 10,
+  userKeys?: UserApiKeys
 ): Promise<{ deckId: string; cards: FlashcardItem[] }> {
   const note = await prisma.note.findFirst({ where: { id: noteId, userId } });
   if (!note) throw Object.assign(new Error('Note not found'), { statusCode: 404 });
 
   let cards: FlashcardItem[] = [];
 
-  if (shouldMock()) {
+  if (shouldMock(userKeys)) {
     for (let i = 0; i < cardCount; i++) {
       cards.push({
         front: `Key Term ${i + 1} from ${note.title}`,
@@ -417,7 +436,7 @@ Return ONLY valid JSON in this format:
 Notes:
 ${note.content}`;
 
-      const text = await callAi(prompt, { jsonMode: true });
+      const text = await callAi(prompt, { jsonMode: true }, userKeys);
       const parsed = JSON.parse(text);
       cards = parsed.flashcards || [];
     } catch (error) {
@@ -515,16 +534,17 @@ export async function reviewFlashcard(flashcardId: string, userId: string, quali
 export async function magicGenerate(
   userId: string,
   topic: string,
-  type: 'quiz' | 'flashcards'
+  type: 'quiz' | 'flashcards',
+  userKeys?: UserApiKeys
 ): Promise<{ noteId: string }> {
   let noteContent = '';
 
-  if (shouldMock()) {
+  if (shouldMock(userKeys)) {
     noteContent = `This is a magically generated study note for the topic: ${topic}. It covers all the essential concepts of ${topic} to help you study effectively while in offline mode.`;
   } else {
     try {
       const prompt = `You are an expert study assistant. Generate a comprehensive and educational study note about the following topic: "${topic}". The note should be well-structured with headings and bullet points.`;
-      noteContent = await callAi(prompt);
+      noteContent = await callAi(prompt, undefined, userKeys);
     } catch (error) {
       console.warn("AI magic generate error, using fallback mock:", error);
       noteContent = `This is a magically generated offline note for the topic: ${topic}. The AI service is currently in offline mode.`;
@@ -536,9 +556,9 @@ export async function magicGenerate(
   });
 
   if (type === 'quiz') {
-    await generateQuiz(note.id, userId, 5);
+    await generateQuiz(note.id, userId, 5, userKeys);
   } else if (type === 'flashcards') {
-    await generateFlashcards(note.id, userId, 10);
+    await generateFlashcards(note.id, userId, 10, userKeys);
   }
 
   return { noteId: note.id };
@@ -634,7 +654,8 @@ async function getRealtimeContext(query: string): Promise<string> {
 export async function sendChatMessage(
   sessionId: string,
   userId: string,
-  userMessage: string
+  userMessage: string,
+  userKeys?: UserApiKeys
 ): Promise<string> {
   const session = await prisma.chatSession.findFirst({
     where: { id: sessionId, userId },
@@ -651,7 +672,7 @@ export async function sendChatMessage(
 
   let assistantMessage = '';
 
-  if (shouldMock()) {
+  if (shouldMock(userKeys)) {
     assistantMessage = `I'm your AI tutor! You said: "${userMessage}". I am currently operating in offline mode, but I'm still here to help you study.`;
   } else {
     try {
@@ -695,7 +716,7 @@ CRITICAL RULES:
       
       formattedMessages.push({ role: 'user', content: userMessage });
 
-      assistantMessage = await callAiChat(formattedMessages);
+      assistantMessage = await callAiChat(formattedMessages, userKeys);
     } catch (error) {
       console.warn("AI tutor chat error, using fallback mock:", error);
       assistantMessage = `I'm your AI tutor! You said: "${userMessage}". I am currently operating in offline mode, but I'm still here to help you study.`;

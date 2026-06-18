@@ -8,10 +8,19 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach access token to every request
+// Attach access token and custom API keys to every request
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  
+  const geminiKey = localStorage.getItem('user_gemini_api_key');
+  const groqKey = localStorage.getItem('user_groq_api_key');
+  const openaiKey = localStorage.getItem('user_openai_api_key');
+  
+  if (geminiKey) config.headers['x-gemini-api-key'] = geminiKey;
+  if (groqKey) config.headers['x-groq-api-key'] = groqKey;
+  if (openaiKey) config.headers['x-openai-api-key'] = openaiKey;
+  
   config.headers['Bypass-Tunnel-Reminder'] = 'true';
   return config;
 });

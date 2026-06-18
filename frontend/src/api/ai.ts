@@ -51,4 +51,7 @@ export const aiApi = {
     api.post<{ data: { reply: string } }>(`/ai/chat/sessions/${sessionId}/messages`, { message }),
 
   deleteSession: (sessionId: string) => api.delete(`/ai/chat/sessions/${sessionId}`),
+  
+  getAiStatus: () =>
+    api.get<{ data: { geminiConfigured: boolean; groqConfigured: boolean; openaiConfigured: boolean } }>('/ai/status'),
 };

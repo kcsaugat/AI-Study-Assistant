@@ -71,6 +71,30 @@ export function ChatPage() {
   const [activeSession, setActiveSession] = useState<string | null>(null);
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const hasLocalKey = !!(
+      localStorage.getItem('user_gemini_api_key') ||
+      localStorage.getItem('user_groq_api_key') ||
+      localStorage.getItem('user_openai_api_key')
+    );
+    if (hasLocalKey) {
+      setIsOffline(false);
+      return;
+    }
+    
+    aiApi.getAiStatus()
+      .then((res) => {
+        const { geminiConfigured, groqConfigured, openaiConfigured } = res.data.data;
+        const hasServerKey = geminiConfigured || groqConfigured || openaiConfigured;
+        setIsOffline(!hasServerKey);
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch AI status, assuming offline mode:", err);
+        setIsOffline(true);
+      });
+  }, []);
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ['chatSessions'],
@@ -228,6 +252,14 @@ export function ChatPage() {
 
       {/* Chat area */}
       <div className="flex-1 flex flex-col min-w-0">
+        {isOffline && (
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 flex items-center justify-between text-xs text-amber-200 backdrop-blur-md">
+            <span className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+              <span>AI Tutor is currently in Offline/Demo mode. Go to <a href="/settings" className="underline font-bold hover:text-amber-100">Settings</a> to configure your API key and unlock full RAG, search, & LLM capabilities.</span>
+            </span>
+          </div>
+        )}
         {sessions.length > 0 && (
           <div className="md:hidden border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-3">
             <label className="text-xs uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400 mb-2 block">

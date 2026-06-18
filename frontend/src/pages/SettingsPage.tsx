@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { User, Lock, Moon, Sun, CheckCircle } from 'lucide-react';
+import { User, Lock, Moon, Sun, CheckCircle, Cpu } from 'lucide-react';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
@@ -31,6 +31,33 @@ type PasswordForm = z.infer<typeof passwordSchema>;
 export function SettingsPage() {
   const { user, setUser } = useAuthStore();
   const { isDark, toggle } = useThemeStore();
+
+  const [geminiKey, setGeminiKey] = useState(localStorage.getItem('user_gemini_api_key') || '');
+  const [groqKey, setGroqKey] = useState(localStorage.getItem('user_groq_api_key') || '');
+  const [openaiKey, setOpenaiKey] = useState(localStorage.getItem('user_openai_api_key') || '');
+
+  const onSaveAiKeys = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (geminiKey.trim()) {
+      localStorage.setItem('user_gemini_api_key', geminiKey.trim());
+    } else {
+      localStorage.removeItem('user_gemini_api_key');
+    }
+
+    if (groqKey.trim()) {
+      localStorage.setItem('user_groq_api_key', groqKey.trim());
+    } else {
+      localStorage.removeItem('user_groq_api_key');
+    }
+
+    if (openaiKey.trim()) {
+      localStorage.setItem('user_openai_api_key', openaiKey.trim());
+    } else {
+      localStorage.removeItem('user_openai_api_key');
+    }
+
+    toast.success('AI API Keys saved!');
+  };
 
   const profileForm = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -123,6 +150,47 @@ export function SettingsPage() {
             />
             <Button type="submit" loading={passwordForm.formState.isSubmitting} variant="outline">
               Update Password
+            </Button>
+          </form>
+        </Card>
+      </motion.div>
+
+      {/* AI Configuration */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+        <Card>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
+              <Cpu className="w-4.5 h-4.5 text-purple-600 dark:text-purple-400" size={18} />
+            </div>
+            <div>
+              <CardTitle>AI Configuration</CardTitle>
+              <p className="text-xs text-gray-500 mt-0.5">Configure your custom API keys. Stored securely in your local browser.</p>
+            </div>
+          </div>
+          <form onSubmit={onSaveAiKeys} className="space-y-4">
+            <Input
+              label="Gemini API Key"
+              type="password"
+              placeholder="Gemini API key"
+              value={geminiKey}
+              onChange={(e) => setGeminiKey(e.target.value)}
+            />
+            <Input
+              label="Groq API Key"
+              type="password"
+              placeholder="gsk_..."
+              value={groqKey}
+              onChange={(e) => setGroqKey(e.target.value)}
+            />
+            <Input
+              label="OpenAI API Key"
+              type="password"
+              placeholder="sk-..."
+              value={openaiKey}
+              onChange={(e) => setOpenaiKey(e.target.value)}
+            />
+            <Button type="submit">
+              Save API Keys
             </Button>
           </form>
         </Card>
