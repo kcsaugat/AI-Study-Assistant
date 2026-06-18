@@ -18,7 +18,7 @@ export function QuizPlayer({ quiz }: QuizPlayerProps) {
     Array(quiz.questions.length).fill(null)
   );
   const [finished, setFinished] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(5);
+  const [timeLeft, setTimeLeft] = useState(10);
 
   const questions = quiz.questions?.map((q) => {
     let parsedOptions: string[] = [];
@@ -77,7 +77,7 @@ export function QuizPlayer({ quiz }: QuizPlayerProps) {
 
   // Reset timer on new question
   useEffect(() => {
-    setTimeLeft(5);
+    setTimeLeft(10);
   }, [current]);
 
   const handleReset = () => {
@@ -85,7 +85,7 @@ export function QuizPlayer({ quiz }: QuizPlayerProps) {
     setSelected(null);
     setAnswers(Array(questions.length).fill(null));
     setFinished(false);
-    setTimeLeft(5);
+    setTimeLeft(10);
   };
 
   // Calculate score excluding -1 (timeouts)
