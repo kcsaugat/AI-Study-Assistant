@@ -9,6 +9,129 @@ export interface UserApiKeys {
   openaiApiKey?: string;
 }
 
+function generateOfflineSummary(title: string, content: string): string {
+  const sentences = content
+    .split(/[.!?]+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 15 && s.length < 200);
+
+  if (sentences.length === 0) {
+    return `- Key Concept: ${title}\n- Details: Review the note content to understand the details.`;
+  }
+
+  const keySentences = sentences.filter(s => 
+    /\b(is|are|defined|refers|means|important|key|main|essential|principle|concept|use|function|result)\b/i.test(s)
+  );
+
+  const selected = keySentences.slice(0, 4);
+  if (selected.length < 2) {
+    selected.push(...sentences.slice(0, 4 - selected.length));
+  }
+
+  return selected.map((s, idx) => {
+    if (idx === 0) return `- Main Idea: ${s}`;
+    if (idx === 3) return `- Summary: ${s}`;
+    return `- Key Concept: ${s}`;
+  }).join('\n');
+}
+
+function generateOfflineQuiz(title: string, content: string, count: number): QuizQuestion[] {
+  const sentences = content
+    .split(/[.!?]+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 25 && s.length < 150 && s.includes(' '));
+
+  const questions: QuizQuestion[] = [];
+  const stopWords = new Set(['the', 'and', 'a', 'of', 'to', 'in', 'is', 'that', 'it', 'for', 'on', 'with', 'as', 'this', 'are', 'was', 'by', 'an', 'be', 'at', 'or', 'from', 'they', 'have']);
+
+  for (let i = 0; i < Math.min(count, sentences.length); i++) {
+    const sentence = sentences[i];
+    const words = sentence
+      .replace(/[^a-zA-Z\s]/g, '')
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !stopWords.has(w.toLowerCase()));
+
+    if (words.length > 0) {
+      const correctAnswerWord = words[Math.floor(Math.random() * words.length)];
+      const regex = new RegExp(`\\b${correctAnswerWord}\\b`, 'i');
+      const questionText = sentence.replace(regex, '_______');
+
+      const otherWords = Array.from(new Set(
+        content
+          .replace(/[^a-zA-Z\s]/g, '')
+          .split(/\s+/)
+          .filter(w => w.length > 3 && !stopWords.has(w.toLowerCase()) && w.toLowerCase() !== correctAnswerWord.toLowerCase())
+      )).slice(0, 10);
+
+      const genericOptions = ['Concept', 'Function', 'Process', 'System', 'Variable', 'Theory', 'Method'];
+      const optionsPool = [...otherWords, ...genericOptions].filter(w => w.toLowerCase() !== correctAnswerWord.toLowerCase());
+      optionsPool.sort(() => 0.5 - Math.random());
+
+      const incorrectOptions = optionsPool.slice(0, 3);
+      const options = [correctAnswerWord, ...incorrectOptions];
+      options.sort(() => 0.5 - Math.random());
+      
+      const correctAnswerIndex = options.indexOf(correctAnswerWord);
+
+      questions.push({
+        question: `Fill in the blank: "${questionText}"`,
+        options,
+        correctAnswer: correctAnswerIndex,
+        explanation: `In the study notes for "${title}", the full statement is: "${sentence}".`
+      });
+    }
+  }
+
+  while (questions.length < count) {
+    const idx = questions.length + 1;
+    questions.push({
+      question: `What is the primary topic of the study note "${title}"?`,
+      options: [title, `An unrelated subtopic of ${title}`, `A historical overview of ${title}`, `The mathematical formula of ${title}`],
+      correctAnswer: 0,
+      explanation: `This note focuses on the main topic: "${title}".`
+    });
+  }
+
+  return questions;
+}
+
+function generateOfflineFlashcards(title: string, content: string, count: number): FlashcardItem[] {
+  const sentences = content
+    .split(/[.!?]+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 20 && s.length < 150);
+
+  const cards: FlashcardItem[] = [];
+  const stopWords = new Set(['the', 'and', 'a', 'of', 'to', 'in', 'is', 'that', 'it', 'for', 'on', 'with', 'as', 'this', 'are', 'was', 'by', 'an', 'be', 'at', 'or', 'from']);
+
+  for (let i = 0; i < Math.min(count, sentences.length); i++) {
+    const sentence = sentences[i];
+    const words = sentence
+      .replace(/[^a-zA-Z\s]/g, '')
+      .split(/\s+/)
+      .filter(w => w.length > 4 && !stopWords.has(w.toLowerCase()));
+
+    if (words.length > 0) {
+      const term = words[Math.floor(Math.random() * words.length)];
+      const capitalizedTerm = term.charAt(0).toUpperCase() + term.slice(1);
+      cards.push({
+        front: capitalizedTerm,
+        back: `In "${title}", this term is used in the context of: "${sentence}"`
+      });
+    }
+  }
+
+  while (cards.length < count) {
+    const idx = cards.length + 1;
+    cards.push({
+      front: `Concept ${idx} for ${title}`,
+      back: `Review your notes for "${title}" to master this key concept.`
+    });
+  }
+
+  return cards;
+}
+
 function getAiProvider(userKeys?: UserApiKeys): 'gemini' | 'groq' | 'openai' | 'mock' {
   const geminiKey = userKeys?.geminiApiKey || process.env.GEMINI_API_KEY;
   if (geminiKey && !geminiKey.includes('key-here') && !geminiKey.includes('your_gemini')) {
@@ -247,14 +370,17 @@ export async function summarizeNote(noteId: string, userId: string, userKeys?: U
   let summary = '';
   
   if (shouldMock(userKeys)) {
-    summary = `- Key concept: Understanding the core principles of this topic.\n- Main idea: ${note.title} is an essential study material.\n- Details: The notes cover various fundamental aspects that are critical for mastery.\n- Conclusion: Review this material frequently to retain knowledge.`;
+    summary = generateOfflineSummary(note.title, note.content);
   } else {
     try {
       const prompt = `You are an expert study assistant. Summarize the following study notes concisely and clearly. Use bullet points for key concepts. Keep it focused and educational.\n\nNotes:\n${note.content}`;
       summary = await callAi(prompt, undefined, userKeys);
     } catch (error) {
+      if (userKeys && (userKeys.geminiApiKey || userKeys.groqApiKey || userKeys.openaiApiKey)) {
+        throw error;
+      }
       console.warn("AI summarize error, using fallback mock:", error);
-      summary = `- Key concept: Understanding the core principles of this topic.\n- Main idea: ${note.title} is an essential study material.\n- Details: The notes cover various fundamental aspects that are critical for mastery.\n- Conclusion: Review this material frequently to retain knowledge.`;
+      summary = generateOfflineSummary(note.title, note.content);
     }
   }
 
@@ -306,14 +432,7 @@ export async function generateQuiz(
   let questions: QuizQuestion[] = [];
 
   if (shouldMock(userKeys)) {
-    for (let i = 0; i < questionCount; i++) {
-      questions.push({
-        question: `What is a key takeaway from "${note.title}" (Practice Question ${i + 1})?`,
-        options: ["Option A: Incorrect", "Option B: Incorrect", "Option C: Correct Answer", "Option D: Incorrect"],
-        correctAnswer: 2,
-        explanation: "This is a practice explanation."
-      });
-    }
+    questions = generateOfflineQuiz(note.title, note.content, questionCount);
   } else {
     try {
       const prompt = `You are a quiz generator. Generate exactly ${questionCount} multiple-choice questions from the provided study notes. 
@@ -336,15 +455,11 @@ ${note.content}`;
       const parsed = JSON.parse(text);
       questions = parsed.questions || [];
     } catch (error) {
-      console.warn("AI quiz error, using fallback mock:", error);
-      for (let i = 0; i < questionCount; i++) {
-        questions.push({
-          question: `What is a key takeaway from "${note.title}" (Practice Question ${i + 1})?`,
-          options: ["Option A: Incorrect", "Option B: Incorrect", "Option C: Correct Answer", "Option D: Incorrect"],
-          correctAnswer: 2,
-          explanation: "This is a fallback practice explanation generated while offline."
-        });
+      if (userKeys && (userKeys.geminiApiKey || userKeys.groqApiKey || userKeys.openaiApiKey)) {
+        throw error;
       }
+      console.warn("AI quiz error, using fallback mock:", error);
+      questions = generateOfflineQuiz(note.title, note.content, questionCount);
     }
   }
 
@@ -418,12 +533,7 @@ export async function generateFlashcards(
   let cards: FlashcardItem[] = [];
 
   if (shouldMock(userKeys)) {
-    for (let i = 0; i < cardCount; i++) {
-      cards.push({
-        front: `Key Term ${i + 1} from ${note.title}`,
-        back: `This is a practice definition for Term ${i + 1}.`
-      });
-    }
+    cards = generateOfflineFlashcards(note.title, note.content, cardCount);
   } else {
     try {
       const prompt = `You are a flashcard generator. Create exactly ${cardCount} study flashcards from the provided notes.
@@ -440,13 +550,11 @@ ${note.content}`;
       const parsed = JSON.parse(text);
       cards = parsed.flashcards || [];
     } catch (error) {
-      console.warn("AI flashcard error, using fallback mock:", error);
-      for (let i = 0; i < cardCount; i++) {
-        cards.push({
-          front: `Key Term ${i + 1} from ${note.title}`,
-          back: `This is a fallback definition for Term ${i + 1} generated while offline.`
-        });
+      if (userKeys && (userKeys.geminiApiKey || userKeys.groqApiKey || userKeys.openaiApiKey)) {
+        throw error;
       }
+      console.warn("AI flashcard error, using fallback mock:", error);
+      cards = generateOfflineFlashcards(note.title, note.content, cardCount);
     }
   }
 
@@ -546,6 +654,9 @@ export async function magicGenerate(
       const prompt = `You are an expert study assistant. Generate a comprehensive and educational study note about the following topic: "${topic}". The note should be well-structured with headings and bullet points.`;
       noteContent = await callAi(prompt, undefined, userKeys);
     } catch (error) {
+      if (userKeys && (userKeys.geminiApiKey || userKeys.groqApiKey || userKeys.openaiApiKey)) {
+        throw error;
+      }
       console.warn("AI magic generate error, using fallback mock:", error);
       noteContent = `This is a magically generated offline note for the topic: ${topic}. The AI service is currently in offline mode.`;
     }
@@ -718,6 +829,9 @@ CRITICAL RULES:
 
       assistantMessage = await callAiChat(formattedMessages, userKeys);
     } catch (error) {
+      if (userKeys && (userKeys.geminiApiKey || userKeys.groqApiKey || userKeys.openaiApiKey)) {
+        throw error;
+      }
       console.warn("AI tutor chat error, using fallback mock:", error);
       assistantMessage = `I'm your AI tutor! You said: "${userMessage}". I am currently operating in offline mode, but I'm still here to help you study.`;
     }
